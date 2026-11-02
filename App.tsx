@@ -273,8 +273,8 @@ const App: React.FC = () => {
 
     const deathYearA = profileA.birthYear + profileA.lifeExpectancy;
     const deathYearB = profileB.birthYear + profileB.lifeExpectancy;
-    const relDeathA = deathYearA - baseYear;
-    const relDeathB = deathYearB - baseYear;
+    const relDeathA = 62 + (deathYearA - baseYear);
+    const relDeathB = 62 + (deathYearB - baseYear);
 
     const findSimVal = (yr: number, sim: any[]) => {
       const pt = sim.find(s => s.year === yr);
@@ -296,6 +296,7 @@ const App: React.FC = () => {
     const maxSimYears = 35;
     for (let yrOffset = 0; yrOffset <= maxSimYears; yrOffset++) {
       const calYear = baseYear + yrOffset;
+      const currentAge = 62 + yrOffset;
       const userPt = userSim.find(s => s.year === calYear);
       const optPt = optimalSim.find(s => s.year === calYear);
       const worstPt = worstSim.find(s => s.year === calYear);
@@ -307,8 +308,9 @@ const App: React.FC = () => {
 
       if (chartMode === 'crossover') {
         const b62 = base62Pt ? base62Pt.cumulative : 0;
-        map.set(yrOffset, {
-          year: yrOffset,
+        map.set(currentAge, {
+          age: currentAge,
+          year: currentAge,
           calYear,
           'Your Strategy': userPt.cumulative - b62,
           ...(showOptimalLine && optPt ? { 'Optimal Strategy': optPt.cumulative - b62 } : {}),
@@ -317,8 +319,9 @@ const App: React.FC = () => {
           'Baseline (Both 62)': 0,
         });
       } else {
-        map.set(yrOffset, {
-          year: yrOffset,
+        map.set(currentAge, {
+          age: currentAge,
+          year: currentAge,
           calYear,
           'Your Strategy': userPt.cumulative,
           ...(showOptimalLine && optPt ? { 'Optimal Strategy': optPt.cumulative } : {}),
@@ -328,7 +331,7 @@ const App: React.FC = () => {
     }
 
     return { 
-      chartData: Array.from(map.values()).sort((a, b) => a.year - b.year),
+      chartData: Array.from(map.values()).sort((a, b) => a.age - b.age),
       deathRefs: refs
     };
   }, [userSim, optimalSim, worstSim, baseline62Sim, fraSim, age70Sim, showOptimalLine, chartMode, profileA.birthYear, profileB.birthYear, profileA.lifeExpectancy, profileB.lifeExpectancy]);
@@ -345,14 +348,14 @@ const App: React.FC = () => {
   const spreadVal = maxLifetimeLocal - minLifetimeLocal;
   const spreadPct = spreadVal > 0 ? ((currentCash - minLifetimeLocal) / spreadVal) * 100 : 0;
   
-  const chartTicks = Array.from({length: 36}, (_, i) => i);
+  const chartTicks = Array.from({length: 36}, (_, i) => 62 + i);
 
   const claimRefs = useMemo(() => {
     const baseYear = Math.min(profileA.birthYear, profileB.birthYear) + 62;
     const claimYearA = profileA.birthYear + profileA.claimAge;
     const claimYearB = profileB.birthYear + profileB.claimAge;
-    const xA = claimYearA - baseYear;
-    const xB = claimYearB - baseYear;
+    const xA = 62 + (claimYearA - baseYear);
+    const xB = 62 + (claimYearB - baseYear);
     const isALeft = xA <= xB;
     const leftDeathVal = deathRefs.deathA.x < deathRefs.deathB.x ? deathRefs.deathA.val : deathRefs.deathB.val;
     const rightClaimHeight = leftDeathVal * 0.85;
@@ -1123,13 +1126,18 @@ const App: React.FC = () => {
                   <LineChart data={chartData} margin={{ top: 20, right: 80, left: 20, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis 
-                      dataKey="year" 
-                      domain={[0, 35]} 
+                      dataKey="age" 
+                      domain={[62, 97]} 
                       ticks={chartTicks} 
-                      tickFormatter={(val) => val % 5 === 0 ? val : ''} 
+                      tickFormatter={(val) => val === 62 || val % 5 === 0 ? val : ''} 
                       type="number" 
                       tick={{fill: '#64748b', fontSize: 12}} 
-                      label={{ value: 'Retirement Year (Age from 62)', position: 'insideBottom', offset: -5, style: {fill: '#64748b', fontSize: 12} }} 
+                      label={{ 
+                        value: profileA.birthYear === profileB.birthYear ? 'Age' : `Age (based on ${profileA.birthYear <= profileB.birthYear ? nameA : nameB})`, 
+                        position: 'insideBottom', 
+                        offset: -5, 
+                        style: {fill: '#64748b', fontSize: 12} 
+                      }} 
                     />
                     <YAxis 
                       domain={chartDomain} 
@@ -1156,8 +1164,14 @@ const App: React.FC = () => {
                         return `${val > 0 ? '+' : ''}${formatCurrency(val)}`;
                       }} 
                       labelFormatter={(label) => {
-                        const item = chartData.find(d => d.year === label);
-                        return item ? `Retirement Year ${label} (${item.calYear})` : `Year ${label}`;
+                        const item = chartData.find(d => d.age === label || d.year === label);
+                        if (!item) return `Age ${label}`;
+                        if (profileA.birthYear === profileB.birthYear) {
+                          return `Age ${label} (${item.calYear})`;
+                        }
+                        const ageA = item.calYear - profileA.birthYear;
+                        const ageB = item.calYear - profileB.birthYear;
+                        return `${nameA}: Age ${ageA} | ${nameB}: Age ${ageB} (${item.calYear})`;
                       }} 
                       contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }} 
                     />
@@ -1189,7 +1203,7 @@ const App: React.FC = () => {
                         <ReferenceLine segment={[{ x: deathRefs.deathB.x, y: 0 }, { x: deathRefs.deathB.x, y: deathRefs.deathB.val }]} stroke={claimRefs.claimB.color} strokeWidth={1}>
                           <Label value={`Death ${nameB}`} position="insideTopLeft" offset={10} fontSize={10} fill={claimRefs.claimB.color} />
                         </ReferenceLine>
-                        <ReferenceLine segment={[{ x: 0, y: deathRefs.final.val }, { x: deathRefs.final.x, y: deathRefs.final.val }]} stroke="#64748b" strokeDasharray="3 3">
+                        <ReferenceLine segment={[{ x: 62, y: deathRefs.final.val }, { x: deathRefs.final.x, y: deathRefs.final.val }]} stroke="#64748b" strokeDasharray="3 3">
                           <Label value={`Final: ${formatMillions(deathRefs.final.val)}`} position="insideBottomRight" offset={10} fontSize={10} fill="#666" />
                         </ReferenceLine>
                       </>
