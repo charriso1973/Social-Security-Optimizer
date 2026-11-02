@@ -14,6 +14,17 @@ export const FRA_YEARS = 67; // For 1963 cohort
 export const DEFAULT_PIA_A = 3451;
 export const DEFAULT_PIA_B = 3401;
 
+// Input Bounds (Guardrails from stress-testing audit)
+export const SS_MIN_COLA_PCT = 0.0;
+export const SS_MAX_COLA_PCT = 10.0;
+export const SS_MIN_REAL_RETURN_PCT = -10.0;
+export const SS_MAX_REAL_RETURN_PCT = 20.0;
+export const SS_MIN_LIFE_EXP = 40;
+export const SS_MAX_LIFE_EXP = 120;
+export const SS_MAX_MONTHLY_PIA = 20000;
+export const SS_MIN_CLAIM_AGE = 62;
+export const SS_MAX_CLAIM_AGE = 70;
+
 // Historical Tax Max (Contribution and Benefit Base) - Simplified recent history for capping
 export const TAX_MAX_SERIES: Record<number, number> = {
   1980: 25900, 1981: 29700, 1982: 32400, 1983: 35700, 1984: 37800,

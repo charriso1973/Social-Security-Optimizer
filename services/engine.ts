@@ -18,6 +18,7 @@ export const parseEarningsCSV = (csv: string): EarningsRecord[] => {
 };
 
 export const calculatePIAFromAIME = (aime: number): number => {
+  if (aime <= 0 || isNaN(aime)) return 0;
   let pia = 0;
   // First Segment
   pia += 0.90 * Math.min(aime, BEND_POINT_1);
@@ -36,6 +37,7 @@ export const calculatePIAFromAIME = (aime: number): number => {
 };
 
 export const estimateAIMEFromPIA = (pia: number): number => {
+  if (pia <= 0 || isNaN(pia)) return 0;
   // Reverse the bend points logic (Approximation using 2025 factors)
   // Segment 1 max PIA = 0.9 * 1226 = 1103.4
   // Segment 2 max PIA = 1103.4 + 0.32 * (7391 - 1226) = 1103.4 + 1972.8 = 3076.2
@@ -131,6 +133,15 @@ export const simulateHousehold = (
   realReturn: number,
   solvencyFactor: number // 0.0 to 1.0 (1.0 = 100% benefits)
 ): SimulationYear[] => {
+  // Defensive bounds checks (protects against degenerate/extreme values)
+  const safeCola = Math.max(0, Math.min(0.20, isNaN(cola) ? 0 : cola));
+  const safeRealReturn = Math.max(-0.50, Math.min(0.50, isNaN(realReturn) ? 0 : realReturn));
+  const safeSolvency = Math.max(0, Math.min(1.0, isNaN(solvencyFactor) ? 1.0 : solvencyFactor));
+  const safePiaA = Math.max(0, Math.min(25000, isNaN(personA.pia) ? 0 : personA.pia));
+  const safePiaB = Math.max(0, Math.min(25000, isNaN(personB.pia) ? 0 : personB.pia));
+  const safeClaimAgeA = Math.max(62, Math.min(70, isNaN(claimAgeA) ? 67 : claimAgeA));
+  const safeClaimAgeB = Math.max(62, Math.min(70, isNaN(claimAgeB) ? 67 : claimAgeB));
+
   const results: SimulationYear[] = [];
   const startYear = Math.min(personA.birthYear, personB.birthYear) + 62;
   const maxAge = 100; // Cap simulation
@@ -138,19 +149,19 @@ export const simulateHousehold = (
 
   // Calculate Nominal Return Rate for investment growth
   // Formula: (1 + Real) * (1 + Inflation/COLA) - 1
-  const nominalReturnRate = (1 + realReturn) * (1 + cola) - 1;
+  const nominalReturnRate = (1 + safeRealReturn) * (1 + safeCola) - 1;
 
   // Calculate Initial Monthly Benefits (in today's dollars, unadjusted for COLA yet)
-  const factorA = getBenefitAdjustmentFactor(claimAgeA, FRA_YEARS);
-  const factorB = getBenefitAdjustmentFactor(claimAgeB, FRA_YEARS);
+  const factorA = getBenefitAdjustmentFactor(safeClaimAgeA, FRA_YEARS);
+  const factorB = getBenefitAdjustmentFactor(safeClaimAgeB, FRA_YEARS);
 
-  const baseBenefitA = Math.floor(personA.pia * factorA);
-  const baseBenefitB = Math.floor(personB.pia * factorB);
+  const baseBenefitA = Math.floor(safePiaA * factorA);
+  const baseBenefitB = Math.floor(safePiaB * factorB);
 
   // Spousal Check
   // Spousal benefit is 50% of the other person's PIA (not their benefit), minus own PIA.
-  const rawSpousalForA = Math.max(0, (0.5 * personB.pia) - personA.pia);
-  const rawSpousalForB = Math.max(0, (0.5 * personA.pia) - personB.pia);
+  const rawSpousalForA = Math.max(0, (0.5 * safePiaB) - safePiaA);
+  const rawSpousalForB = Math.max(0, (0.5 * safePiaA) - safePiaB);
   
   const getSpousalReduction = (age: number) => {
     const monthsEarly = Math.max(0, (FRA_YEARS - age) * 12);
@@ -161,8 +172,8 @@ export const simulateHousehold = (
     return Math.max(0, 1 - red);
   };
   
-  const spousalFactorA = getSpousalReduction(claimAgeA);
-  const spousalFactorB = getSpousalReduction(claimAgeB);
+  const spousalFactorA = getSpousalReduction(safeClaimAgeA);
+  const spousalFactorB = getSpousalReduction(safeClaimAgeB);
   
   const spousalTopUpA = Math.floor(rawSpousalForA * spousalFactorA);
   const spousalTopUpB = Math.floor(rawSpousalForB * spousalFactorB);
@@ -266,8 +277,8 @@ export const simulateHousehold = (
     }
 
     // Apply Solvency Haircut
-    monthlyCheckA *= solvencyFactor;
-    monthlyCheckB *= solvencyFactor;
+    monthlyCheckA *= safeSolvency;
+    monthlyCheckB *= safeSolvency;
 
     const annualTotal = (monthlyCheckA + monthlyCheckB) * 12;
     

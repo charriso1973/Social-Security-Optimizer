@@ -2,31 +2,16 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Label
 } from 'recharts';
-import { Calculator, DollarSign, Heart, TrendingUp, Info, AlertTriangle, User, Settings, Edit3, FileText, ArrowRight, ArrowLeft, Trophy, Target, Scissors, Lightbulb, Bomb, Minus, Pin, PinOff, Calendar, RefreshCcw } from 'lucide-react';
+import { Calculator, DollarSign, Heart, TrendingUp, Info, AlertTriangle, User, Settings, Edit3, FileText, ArrowRight, ArrowLeft, Trophy, Target, Scissors, Lightbulb, Bomb, Minus, Pin, PinOff, Calendar, RefreshCcw, Sparkles } from 'lucide-react';
 
 import { PersonProfile, TaxInput } from './types';
-import { DEFAULT_EARNINGS_CSV, DEFAULT_EARNINGS_CSV_B, DEFAULT_BIRTH_YEAR, ASSUMED_COLA, DEFAULT_REAL_RETURN, DEFAULT_PIA_A, DEFAULT_PIA_B } from './constants';
+import { 
+  DEFAULT_EARNINGS_CSV, DEFAULT_EARNINGS_CSV_B, DEFAULT_BIRTH_YEAR, ASSUMED_COLA, DEFAULT_REAL_RETURN, DEFAULT_PIA_A, DEFAULT_PIA_B,
+  SS_MIN_COLA_PCT, SS_MAX_COLA_PCT, SS_MIN_REAL_RETURN_PCT, SS_MAX_REAL_RETURN_PCT,
+  SS_MIN_LIFE_EXP, SS_MAX_LIFE_EXP, SS_MAX_MONTHLY_PIA, SS_MIN_CLAIM_AGE, SS_MAX_CLAIM_AGE
+} from './constants';
 import { parseEarningsCSV, calculatePIA, simulateHousehold, calculateStrategyGrid, calculatePIAFromAIME, estimateAIMEFromPIA, calculateTaxSnapshot } from './services/engine';
-
-// Helper to map color for heat map
-const getCellColor = (value: number, min: number, max: number) => {
-  if (max === min) {
-    return { 
-      style: undefined, 
-      className: 'bg-slate-200 text-slate-800' 
-    };
-  }
-  const ratio = (value - min) / (max - min);
-  const r = Math.round(252 - (ratio * (252 - 21)));
-  const g = Math.round(165 - (ratio * (165 - 128)));
-  const b = Math.round(165 - (ratio * (165 - 61)));
-  const textColor = ratio > 0.6 ? 'text-white' : 'text-slate-800';
-
-  return { 
-    style: { backgroundColor: `rgb(${r}, ${g}, ${b})` },
-    className: `${textColor}`
-  };
-};
+import { StrategyHeatmap } from './StrategyHeatmap';
 
 // Formatting Helpers
 const formatNumber = (num: number) => num.toLocaleString('en-US');
@@ -543,6 +528,66 @@ const App: React.FC = () => {
      };
   }, [savingsA, savingsB, contribA, contribB, contribEndAgeA, contribEndAgeB, otherIncA1, otherIncA2, otherIncA3, otherIncB1, otherIncB2, otherIncB3, qcdA, qcdB, realReturn, cola, birthYearA, birthYearB, claimAgeA, claimAgeB, userSim, profileA, profileB, useRealDollars, effectiveCola]);
 
+  // Guarded setters for inputs
+  const handleManualPiaA = (val: number) => setManualPiaA(Math.max(0, Math.min(SS_MAX_MONTHLY_PIA, isNaN(val) ? 0 : val)));
+  const handleManualPiaB = (val: number) => setManualPiaB(Math.max(0, Math.min(SS_MAX_MONTHLY_PIA, isNaN(val) ? 0 : val)));
+  const handleManualAimeA = (val: number) => setManualAimeA(Math.max(0, Math.min(50000, isNaN(val) ? 0 : val)));
+  const handleManualAimeB = (val: number) => setManualAimeB(Math.max(0, Math.min(50000, isNaN(val) ? 0 : val)));
+  const handleBirthYearA = (val: number) => setBirthYearA(Math.max(1920, Math.min(2010, isNaN(val) ? DEFAULT_BIRTH_YEAR : val)));
+  const handleBirthYearB = (val: number) => setBirthYearB(Math.max(1920, Math.min(2010, isNaN(val) ? DEFAULT_BIRTH_YEAR : val)));
+  const handleLifeExpA = (val: number) => setLifeExpA(Math.max(SS_MIN_LIFE_EXP, Math.min(SS_MAX_LIFE_EXP, isNaN(val) ? 85 : val)));
+  const handleLifeExpB = (val: number) => setLifeExpB(Math.max(SS_MIN_LIFE_EXP, Math.min(SS_MAX_LIFE_EXP, isNaN(val) ? 95 : val)));
+  const handleColaChange = (val: number) => setCola(Math.max(0, Math.min(SS_MAX_COLA_PCT / 100, isNaN(val) ? ASSUMED_COLA : val)));
+  const handleRealReturnChange = (val: number) => setRealReturn(Math.max(SS_MIN_REAL_RETURN_PCT / 100, Math.min(SS_MAX_REAL_RETURN_PCT / 100, isNaN(val) ? DEFAULT_REAL_RETURN : val)));
+
+  const handleResetDefaults = () => {
+    setIsMarried(false);
+    setCola(ASSUMED_COLA);
+    setRealReturn(DEFAULT_REAL_RETURN);
+    setApplyHaircut(false);
+    setHaircutPct(83);
+    setUseRealDollars(false);
+    setNameA('Partner A');
+    setBirthYearA(DEFAULT_BIRTH_YEAR);
+    setLifeExpA(85);
+    setClaimAgeA(67);
+    setPiaMethodA('manual');
+    setManualPiaA(DEFAULT_PIA_A);
+    setManualAimeA(10000);
+    setNameB('Partner B');
+    setBirthYearB(DEFAULT_BIRTH_YEAR);
+    setLifeExpB(95);
+    setClaimAgeB(67);
+    setPiaMethodB('manual');
+    setManualPiaB(DEFAULT_PIA_B);
+    setManualAimeB(10000);
+  };
+
+  const handleApplyPreset = (preset: 'balanced' | 'asymmetric' | 'longevity') => {
+    if (preset === 'balanced') {
+      setIsMarried(true);
+      setClaimAgeA(67);
+      setClaimAgeB(67);
+      setManualPiaA(3400);
+      setManualPiaB(3400);
+      setLifeExpA(85);
+      setLifeExpB(85);
+    } else if (preset === 'asymmetric') {
+      setIsMarried(true);
+      setClaimAgeA(70);
+      setClaimAgeB(62);
+      setManualPiaA(4000);
+      setManualPiaB(1600);
+      setLifeExpA(85);
+      setLifeExpB(92);
+    } else if (preset === 'longevity') {
+      setIsMarried(true);
+      setClaimAgeA(65);
+      setClaimAgeB(70);
+      setLifeExpA(78);
+      setLifeExpB(96);
+    }
+  };
 
   return (
     <div className="min-h-screen pb-12 font-sans bg-slate-50 text-slate-800">
@@ -573,18 +618,64 @@ const App: React.FC = () => {
             
             {/* Global Assumptions */}
             <div className="bg-white p-5 rounded-lg shadow-sm border border-slate-200 border-l-4 border-l-slate-900">
-               <div className="flex items-center justify-between mb-4">
+               <div className="flex items-center justify-between mb-3">
                   <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                     <Settings className="w-5 h-5" /> Global Assumptions
                   </h2>
-                  <button 
-                    onClick={() => setIsSidebarPinned(!isSidebarPinned)}
-                    className="text-slate-300 hover:text-slate-900 transition-colors p-1"
-                    title={isSidebarPinned ? "Unpin Sidebar" : "Pin Sidebar"}
-                  >
-                    {isSidebarPinned ? <Pin size={16} className="fill-current" /> : <PinOff size={16} />}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={handleResetDefaults}
+                      className="text-slate-400 hover:text-slate-700 transition-colors p-1 rounded hover:bg-slate-100"
+                      title="Reset all inputs to standard defaults"
+                    >
+                      <RefreshCcw size={15} />
+                    </button>
+                    <button 
+                      onClick={() => setIsSidebarPinned(!isSidebarPinned)}
+                      className="text-slate-300 hover:text-slate-900 transition-colors p-1"
+                      title={isSidebarPinned ? "Unpin Sidebar" : "Pin Sidebar"}
+                    >
+                      {isSidebarPinned ? <Pin size={16} className="fill-current" /> : <PinOff size={16} />}
+                    </button>
+                  </div>
                </div>
+
+               {/* Advisor Presets Bar */}
+               <div className="mb-4 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                 <div className="flex items-center justify-between mb-1.5">
+                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                     <Sparkles className="w-3 h-3 text-amber-500" /> Advisor Presets
+                   </span>
+                 </div>
+                 <div className="grid grid-cols-3 gap-1.5">
+                   <button
+                     type="button"
+                     onClick={() => handleApplyPreset('balanced')}
+                     className="px-1.5 py-1 text-[10px] font-semibold bg-white border border-slate-200 rounded text-slate-700 hover:bg-slate-100 transition-colors text-center truncate"
+                     title="Equal PIAs ($3,400) and symmetrical FRA claim (67/67)"
+                   >
+                     Balanced
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => handleApplyPreset('asymmetric')}
+                     className="px-1.5 py-1 text-[10px] font-semibold bg-white border border-slate-200 rounded text-slate-700 hover:bg-slate-100 transition-colors text-center truncate"
+                     title="Primary earner delays to 70, lower earner claims early at 62"
+                   >
+                     Asymmetric
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => handleApplyPreset('longevity')}
+                     className="px-1.5 py-1 text-[10px] font-semibold bg-white border border-slate-200 rounded text-slate-700 hover:bg-slate-100 transition-colors text-center truncate"
+                     title="Significant longevity gap (Age 78 vs. 96)"
+                   >
+                     Longevity
+                   </button>
+                 </div>
+               </div>
+
                <div className="space-y-6">
                  {/* Toggle Dollar Value */}
                  <div className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-200">
@@ -610,8 +701,8 @@ const App: React.FC = () => {
                      General Inflation Rate (=SS COLA): <span className={`font-bold ml-1 ${useRealDollars ? 'text-slate-400' : 'text-slate-900'}`}>{formatPct(cola)}</span>
                    </label>
                    <input 
-                     type="range" min="0" max="0.10" step="0.001" 
-                     value={cola} onChange={e => setCola(Number(e.target.value))} 
+                     type="range" min={SS_MIN_COLA_PCT / 100} max={SS_MAX_COLA_PCT / 100} step="0.001" 
+                     value={cola} onChange={e => handleColaChange(Number(e.target.value))} 
                      disabled={useRealDollars}
                      className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${useRealDollars ? 'bg-slate-100' : 'bg-slate-200 accent-slate-900'}`} 
                    />
@@ -623,8 +714,8 @@ const App: React.FC = () => {
                      Real Investment Return: <span className="text-slate-900 font-bold ml-1">{formatPct(realReturn)}</span>
                    </label>
                    <input 
-                     type="range" min="-0.10" max="0.10" step="0.005" list="return-markers"
-                     value={realReturn} onChange={e => setRealReturn(Number(e.target.value))} 
+                     type="range" min={SS_MIN_REAL_RETURN_PCT / 100} max={SS_MAX_REAL_RETURN_PCT / 100} step="0.005" list="return-markers"
+                     value={realReturn} onChange={e => handleRealReturnChange(Number(e.target.value))} 
                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900" 
                    />
                    <datalist id="return-markers">
@@ -633,8 +724,10 @@ const App: React.FC = () => {
                      <option value="0"></option>
                      <option value="0.05"></option>
                      <option value="0.10"></option>
+                     <option value="0.15"></option>
+                     <option value="0.20"></option>
                    </datalist>
-                   <div className="flex justify-between text-xs text-slate-400 mt-1 px-1"><span>-10%</span><span>-5%</span><span>0%</span><span>+5%</span><span>+10%</span></div>
+                   <div className="flex justify-between text-xs text-slate-400 mt-1 px-1"><span>-10%</span><span>0%</span><span>+10%</span><span>+20%</span></div>
                    <p className="text-[10px] text-slate-400 mt-2 leading-tight">
                      Return on invested benefits above inflation. Net nominal growth rate: <strong>{formatPct((1+realReturn)*(1 + (useRealDollars ? 0 : cola))-1)}</strong>.
                    </p>
@@ -690,7 +783,7 @@ const App: React.FC = () => {
                      type="number" 
                      min="1900" max="2010"
                      value={birthYearA} 
-                     onChange={e => setBirthYearA(parseInt(e.target.value) || 1963)}
+                     onChange={e => handleBirthYearA(parseInt(e.target.value) || DEFAULT_BIRTH_YEAR)}
                      className="w-20 text-right text-sm border-b border-slate-300 focus:border-blue-500 outline-none bg-transparent font-bold text-slate-700"
                    />
                  </div>
@@ -699,7 +792,7 @@ const App: React.FC = () => {
               <div className="space-y-4">
                 <div>
                    <label className="block text-xs font-medium text-slate-500 uppercase mb-2">Life Expectancy: <span className="text-blue-600 font-bold text-base ml-1">{lifeExpA}</span></label>
-                   <input type="range" min="60" max="100" step="1" value={lifeExpA} onChange={e => setLifeExpA(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                   <input type="range" min="50" max="105" step="1" value={lifeExpA} onChange={e => handleLifeExpA(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
                    <div className="flex justify-between text-xs text-slate-400 mt-1"><span>60</span><span>70</span><span>80</span><span>90</span><span>100</span></div>
                 </div>
 
@@ -751,8 +844,8 @@ const App: React.FC = () => {
                         Earnings
                       </label>
                    </div>
-                   {piaMethodA === 'manual' && (<TaxInputBox value={manualPiaA} onChange={setManualPiaA} />)}
-                   {piaMethodA === 'aime' && (<TaxInputBox value={manualAimeA} onChange={setManualAimeA} />)}
+                   {piaMethodA === 'manual' && (<TaxInputBox value={manualPiaA} onChange={handleManualPiaA} />)}
+                   {piaMethodA === 'aime' && (<TaxInputBox value={manualAimeA} onChange={handleManualAimeA} />)}
                    {piaMethodA === 'earnings' && (<textarea rows={3} value={earningsA} onChange={e => setEarningsA(e.target.value)} className="block w-full rounded border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-xs font-mono bg-slate-50 p-2 border" />)}
                    <div className="mt-2 pt-2 border-t border-slate-50 text-xs flex justify-between items-center text-slate-500">
                       <span>Effective PIA: <strong>{formatCurrency(profileA.pia)}/mo</strong></span>
@@ -780,7 +873,7 @@ const App: React.FC = () => {
                      type="number" 
                      min="1900" max="2010"
                      value={birthYearB} 
-                     onChange={e => setBirthYearB(parseInt(e.target.value) || 1963)}
+                     onChange={e => handleBirthYearB(parseInt(e.target.value) || DEFAULT_BIRTH_YEAR)}
                      className="w-20 text-right text-sm border-b border-slate-300 focus:border-rose-500 outline-none bg-transparent font-bold text-slate-700"
                    />
                 </div>
@@ -788,7 +881,7 @@ const App: React.FC = () => {
               <div className="space-y-4">
                 <div>
                    <label className="block text-xs font-medium text-slate-500 uppercase mb-2">Life Expectancy: <span className="text-rose-600 font-bold text-base ml-1">{lifeExpB}</span></label>
-                   <input type="range" min="60" max="100" step="1" value={lifeExpB} onChange={e => setLifeExpB(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-600" />
+                   <input type="range" min="50" max="105" step="1" value={lifeExpB} onChange={e => handleLifeExpB(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-600" />
                    <div className="flex justify-between text-xs text-slate-400 mt-1"><span>60</span><span>70</span><span>80</span><span>90</span><span>100</span></div>
                 </div>
 
@@ -840,8 +933,8 @@ const App: React.FC = () => {
                         Earnings
                       </label>
                    </div>
-                   {piaMethodB === 'manual' && (<TaxInputBox value={manualPiaB} onChange={setManualPiaB} />)}
-                   {piaMethodB === 'aime' && (<TaxInputBox value={manualAimeB} onChange={setManualAimeB} />)}
+                   {piaMethodB === 'manual' && (<TaxInputBox value={manualPiaB} onChange={handleManualPiaB} />)}
+                   {piaMethodB === 'aime' && (<TaxInputBox value={manualAimeB} onChange={handleManualAimeB} />)}
                    {piaMethodB === 'earnings' && (<textarea rows={3} value={earningsB} onChange={e => setEarningsB(e.target.value)} className="block w-full rounded border-slate-300 shadow-sm focus:border-rose-500 focus:ring-rose-500 sm:text-xs font-mono bg-slate-50 p-2 border" />)}
                    <div className="mt-2 pt-2 border-t border-slate-50 text-xs flex justify-between items-center text-slate-500">
                       <span>Effective PIA: <strong>{formatCurrency(profileB.pia)}/mo</strong></span>
@@ -953,6 +1046,21 @@ const App: React.FC = () => {
                  </div>
               </div>
             </div>
+
+            {/* CARD 2.5: Interactive 81-Pair Claiming Strategy Grid */}
+            <StrategyHeatmap
+              grid={strategyAnalysis.grid}
+              min={strategyAnalysis.min}
+              max={strategyAnalysis.max}
+              claimAgeA={claimAgeA}
+              claimAgeB={claimAgeB}
+              nameA={nameA}
+              nameB={nameB}
+              onSelectStrategy={(ageA, ageB) => {
+                setClaimAgeA(ageA);
+                setClaimAgeB(ageB);
+              }}
+            />
 
             {/* CARD 3: Main Strategy Chart */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
