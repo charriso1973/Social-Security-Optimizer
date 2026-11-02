@@ -20,7 +20,8 @@ Originally developed as a personal analysis tool and later integrated into the c
 | Feature Area | Status | Notes |
 |---|---|---|
 | **Actuarial Math Engine** | ✅ Complete | Pure TypeScript (`services/engine.ts`), 35-yr AIME, bend points, early reductions, delayed credits, spousal top-ups, survivor step-up. |
-| **Statutory Rules** | ✅ Complete | 2026 Social Security Wage Cap ($184,500), SSA AWI series, SSA index freezing convention for workers under 60. |
+| **Statutory Rules** | ✅ Complete | Auto-refreshed from SSA.gov via `scripts/update_ssa_factors.py`. 2027 Bend Points ($1,340 / $8,077), 2027 Wage Cap ($192,300), 2025 AWI ($72,800.33). |
+| **SSA Auto-Update CLI** | ✅ Complete | `npm run update-ssa` scrapes SSA directly with Akamai headers and short-parse guardrails. |
 | **Break-Even Visualization** | ✅ Complete | Dual-view Recharts component with relative difference vs. claiming at age 62 and cumulative portfolio projections. |
 | **Input Guardrails** | ✅ Complete | Domain boundary limits (COLA, Return, Life Expectancy, PIA) enforced across constants, engine, and UI. |
 | **81-Pair Strategy Heatmap** | ✅ Complete | Interactive 9x9 claiming matrix with calibrated Red-Amber-Green ramp, luminance contrast, optimal badge, and one-click strategy selection. |

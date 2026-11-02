@@ -62,7 +62,21 @@ Living list of candidate features, enhancements, and statutory maintenance items
 
 ---
 
-## B-6 · Google AI Studio / Gemini Deployment Packaging
+## B-6 · Direct SSA Statutory Factor Auto-Update Workflow
+**Status:** ✅ **COMPLETED** (2026-11-02 `scripts/update_ssa_factors.py`)
+
+**Context:** Financial advisors need official statutory precision without manual annual maintenance. The tool must be able to pull updated factors directly from SSA.gov (AWI series, bend points, wage base) while maintaining zero-delay static hosting.
+**Resolution:**
+- Implemented `scripts/update_ssa_factors.py` with Akamai-compliant browser navigation headers.
+- Added short-parse refusal contracts (`MIN_EXPECTED_ROWS >= 30`).
+- Directly updates `constants.ts` and exports `public/statutory_factors.json` for client auditing.
+- Added `npm run update-ssa` script to `package.json`.
+- Successfully fetched official SSA figures: 2027 Bend Points ($1,340 / $8,077), 2027 Wage Cap ($192,300), and 2025 AWI ($72,800.33).
+- Added live SSA provenance badge in the application header.
+
+---
+
+## B-7 · Google AI Studio / Cloud Hosting Deployment Packaging
 **Status:** 📋 **CANDIDATE**
 
 **Context:** Packaging the application for zero-backend deployment, containerization, or web embed via Google AI Studio and modern cloud hosting.

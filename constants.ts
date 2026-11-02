@@ -1,16 +1,26 @@
 import { EarningsRecord } from './types';
 
-// 2025 Bend Points
-export const BEND_POINT_1 = 1226;
-export const BEND_POINT_2 = 7391;
+// ==============================================================================
+// SSA Statutory Actuarial Constants
+// Auto-refreshed from SSA.gov on: 2026-11-02 15:21:37
+// Sources:
+// - AWI Series: https://www.ssa.gov/oact/cola/awiseries.html
+// - PIA Bend Points: https://www.ssa.gov/oact/COLA/bendpoints.html
+// - Contribution Base: https://www.ssa.gov/oact/cola/cbb.html
+// ==============================================================================
+
+// Official SSA PIA Formula Bend Points (Eligibility Year 2027)
+export const STATUTORY_BEND_POINT_YEAR = 2027;
+export const BEND_POINT_1 = 1340;
+export const BEND_POINT_2 = 8077;
 
 // Assumptions
 export const ASSUMED_COLA = 0.025;
 export const DEFAULT_REAL_RETURN = 0.05; // 5% Real return
 export const DEFAULT_BIRTH_YEAR = 1973;
-export const FRA_YEARS = 67; // For 1963 cohort
+export const FRA_YEARS = 67; // Full Retirement Age for cohorts born 1960+
 
-// Default PIA Values (Manual Mode)
+// Default PIA Values (Manual Mode Defaults)
 export const DEFAULT_PIA_A = 3451;
 export const DEFAULT_PIA_B = 3401;
 
@@ -25,7 +35,7 @@ export const SS_MAX_MONTHLY_PIA = 20000;
 export const SS_MIN_CLAIM_AGE = 62;
 export const SS_MAX_CLAIM_AGE = 70;
 
-// Historical Tax Max (Contribution and Benefit Base) - Simplified recent history for capping
+// Historical Tax Max (Contribution and Benefit Base through 2027: $192,300)
 export const TAX_MAX_SERIES: Record<number, number> = {
   1980: 25900, 1981: 29700, 1982: 32400, 1983: 35700, 1984: 37800,
   1985: 39600, 1986: 42000, 1987: 43800, 1988: 45000, 1989: 48000,
@@ -36,10 +46,10 @@ export const TAX_MAX_SERIES: Record<number, number> = {
   2010: 106800, 2011: 106800, 2012: 110100, 2013: 113700, 2014: 117000,
   2015: 118500, 2016: 118500, 2017: 127200, 2018: 128400, 2019: 132900,
   2020: 137700, 2021: 142800, 2022: 147000, 2023: 160200, 2024: 168600,
-  2025: 176100, 2026: 184500
+  2025: 176100, 2026: 184500, 2027: 192300
 };
 
-// AWI Series provided in prompt
+// National Average Wage Index (AWI) Series (Latest published: 2025 = $72,800.33)
 export const DATA_AWI_SERIES: EarningsRecord[] = [
   { "year": 1987, "amount": 18426.51 }, { "year": 1988, "amount": 19334.04 }, { "year": 1989, "amount": 20099.55 },
   { "year": 1990, "amount": 21027.98 }, { "year": 1991, "amount": 21811.60 }, { "year": 1992, "amount": 22935.42 },
@@ -53,7 +63,7 @@ export const DATA_AWI_SERIES: EarningsRecord[] = [
   { "year": 2014, "amount": 46481.52 }, { "year": 2015, "amount": 48098.63 }, { "year": 2016, "amount": 48642.15 },
   { "year": 2017, "amount": 50321.89 }, { "year": 2018, "amount": 52145.80 }, { "year": 2019, "amount": 54099.99 },
   { "year": 2020, "amount": 55628.60 }, { "year": 2021, "amount": 60575.07 }, { "year": 2022, "amount": 63795.13 },
-  { "year": 2023, "amount": 66621.80 }, { "year": 2024, "amount": 69846.57 }
+  { "year": 2023, "amount": 66621.80 }, { "year": 2024, "amount": 69846.57 }, { "year": 2025, "amount": 72800.33 }
 ];
 
 // Helper for default placeholder CSV - High Earner

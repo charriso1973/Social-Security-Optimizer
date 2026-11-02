@@ -8,7 +8,8 @@ import { PersonProfile, TaxInput } from './types';
 import { 
   DEFAULT_EARNINGS_CSV, DEFAULT_EARNINGS_CSV_B, DEFAULT_BIRTH_YEAR, ASSUMED_COLA, DEFAULT_REAL_RETURN, DEFAULT_PIA_A, DEFAULT_PIA_B,
   SS_MIN_COLA_PCT, SS_MAX_COLA_PCT, SS_MIN_REAL_RETURN_PCT, SS_MAX_REAL_RETURN_PCT,
-  SS_MIN_LIFE_EXP, SS_MAX_LIFE_EXP, SS_MAX_MONTHLY_PIA, SS_MIN_CLAIM_AGE, SS_MAX_CLAIM_AGE
+  SS_MIN_LIFE_EXP, SS_MAX_LIFE_EXP, SS_MAX_MONTHLY_PIA, SS_MIN_CLAIM_AGE, SS_MAX_CLAIM_AGE,
+  STATUTORY_BEND_POINT_YEAR, BEND_POINT_1, BEND_POINT_2
 } from './constants';
 import { parseEarningsCSV, calculatePIA, simulateHousehold, calculateStrategyGrid, calculatePIAFromAIME, estimateAIMEFromPIA, calculateTaxSnapshot } from './services/engine';
 import { StrategyHeatmap } from './StrategyHeatmap';
@@ -599,7 +600,14 @@ const App: React.FC = () => {
             <Calculator className="h-6 w-6 text-indigo-600" />
             <h1 className="text-xl font-bold tracking-tight text-slate-900">Social Security Optimizer <span className="text-slate-400 font-light">v3.0</span></h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+             <div 
+               className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-full text-xs font-medium border border-emerald-200" 
+               title={`Bend Points: $${BEND_POINT_1} / $${BEND_POINT_2}. Official published SSA constants.`}
+             >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>SSA Official: <strong>{STATUTORY_BEND_POINT_YEAR || 2027}</strong></span>
+             </div>
              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${isMarried ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
                 {isMarried ? <Heart className="w-4 h-4"/> : <User className="w-4 h-4"/>}
                 {isMarried ? "Married Household" : "Single Household"}
