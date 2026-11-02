@@ -22,6 +22,7 @@ This project adheres to the Antigravity Multi-Agent Standard:
 - `D:\Antigravity Projects\Antigravity_Project_Mgmt\CODING_STANDARDS.md`
 
 ### Guidelines:
+- **Git Commits & Push**: Always proactively offer to commit changes at relevant milestones. Whenever committing changes, always push to the remote repository (`origin main`) as well.
 - **No LaTeX Math in Text**: Never use LaTeX math syntax (e.g., `$\rightarrow$`, `$\le$`) in chat responses, markdown explanations, or transitions. Use standard plain text or Unicode characters (`->`, `<=`, `>=`, `~`, `x`, `+/-`).
 - **PowerShell Syntax**: Avoid chaining `cd <path> && <command>`. Use tool path flags instead (e.g., `npm --prefix "<path>" run build`, `git -C "<path>" <subcommand>`).
 - **Deployment**: Standalone Vite application ready for deployment to Vercel, Netlify, Cloudflare Pages, or GitHub Pages directly from the repo root.
