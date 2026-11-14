@@ -30,6 +30,12 @@ A high-precision, client-side Social Security strategy optimizer designed for fi
 - **Recharts**
 - **Lucide Icons**
 
+## Compliance & Fiduciary Documentation
+
+For compliance officers, financial advisors, and auditors, detailed technical calculation specifications, statutory authority citations (SSA, CFR, POMS, IRC), and presentation slide summaries are located in:
+- [`docs/social_security_compliance_and_calculation_guide.md`](./docs/social_security_compliance_and_calculation_guide.md): Executive presentation slide-deck & architectural reference.
+- [`docs/COMPLIANCE_AND_CALCULATION_REFERENCE.md`](./docs/COMPLIANCE_AND_CALCULATION_REFERENCE.md): Line-by-line statutory calculation manual and formula specification.
+
 ## Getting Started
 
 ### Prerequisites
