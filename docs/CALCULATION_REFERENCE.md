@@ -195,7 +195,7 @@ In practice, a survivor expected to live a short time after the death starts ear
 
 **Cases `survivor-reduced-different-ages` and `survivor-waits-when-longer-lived`:** Partner A (born 1965, PIA $3,000) claims at 67 and is alive through 68. Partner B (born 1970, PIA $800) claimed at 62 and receives $560 plus a $455 spousal excess. After A's death, B (age 64) can start a survivor benefit of $2,633 now, $2,755 at 65, $2,877 at 66, or $3,000 at 67. At a 0% return: if B lives to 70, starting at 64 is worth the most (**$2,633** from 64). If B lives to 90, waiting to 67 is worth the most, so B keeps the own $560 until then and receives **$3,000** from 67.
 
-**Case `survivor-deceased-died-before-claiming`:** Partner A has a PIA of $3,000, planned to claim at 70, and dies after age 64. Partner B (PIA $500) claims at 67 and receives **$3,000**, based on Partner A's PIA.
+**Case `survivor-deceased-died-before-claiming`:** Partner A has a PIA of $3,000, planned to claim at 70, and dies after age 64 without having claimed, so the base is the PIA. Partner B (PIA $500, claims at 67, lives to 90) could start the survivor benefit reduced at 65 or 66. At a 0% return waiting is worth slightly more, so B receives **$3,000** from 67.
 
 **Why the higher earner's claim age affects the survivor:** after the first death, the household keeps the larger of the two benefits. When the higher earner delays, the delayed credits raise that larger benefit, and it continues for as long as the survivor lives. Whether this outweighs the benefits not received while waiting depends on the entered life expectancies and rate of return. The grid in section 8 shows that tradeoff for the entered assumptions.
 
@@ -373,8 +373,8 @@ tax            = 2027 brackets (10% to 37%) applied to taxable income
 | Marital Status (linked for both) | Single / Married | Single | Spousal and survivor rules |
 | PIA method | Manual PIA / Manual AIME / Earnings | Manual PIA | Section 3 |
 | Manual PIA | $0–$20,000 per month | $3,451 / $3,401 | PIA |
-| Manual AIME | $0–$50,000 per month | $10,000 | PIA via bend points |
-| Earnings | `year, amount` lines | 20-year samples (2005–2024) | AIME and PIA |
+| Manual AIME | $0–$50,000 per month | $10,000 | PIA via eligibility-year bend points, plus COLAs since 62 for clients past 62 (section 3.3) |
+| Earnings | `year, amount` lines | 20-year samples (2005–2024) | AIME and PIA (with COLAs since 62 for clients past 62) |
 
 A note appears under Claim Age when a partner is already older than the selected age. Grid results for ages already passed are hypothetical.
 
