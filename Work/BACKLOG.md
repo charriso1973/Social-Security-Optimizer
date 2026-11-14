@@ -25,7 +25,7 @@ Living list of candidate features, enhancements, and statutory maintenance items
 ---
 
 ## B-3 · Input Bounds & Degenerate Value Guardrails
-**Status:** ✅ **COMPLETED** (2026-11-02 `Work/WORK_ORDER_pending_enhancements_and_guardrails.md` · Lane A)
+**Status:** ✅ **COMPLETED** (2026-11-02 `Work/Completed/WORK_ORDER_pending_enhancements_and_guardrails.md` · Lane A)
 
 **Context:** Stress testing in the main Finance Tracker app identified that unconstrained user inputs (e.g. negative COLA, out-of-bounds investment returns, negative PIA, or invalid life expectancies) could cause divide-by-zero errors or inverted optimization results.
 **Resolution:** Defined domain bounds in `constants.ts` and defensive safety clamping in `services/engine.ts` and `App.tsx`:
@@ -38,7 +38,7 @@ Living list of candidate features, enhancements, and statutory maintenance items
 ---
 
 ## B-4 · 81-Pair Strategy Grid Heatmap Interactive Component
-**Status:** ✅ **COMPLETED** (2026-11-02 `Work/WORK_ORDER_pending_enhancements_and_guardrails.md` · Lane B)
+**Status:** ✅ **COMPLETED** (2026-11-02 `Work/Completed/WORK_ORDER_pending_enhancements_and_guardrails.md` · Lane B)
 
 **Context:** The standalone app computed the 81-pair claiming matrix (`services/engine.ts:calculateStrategyGrid`) but did not render the full 9x9 matrix in the UI. Advisors need an interactive heatmap comparing all combinations (ages 62 to 70 for both partners) to explain trade-offs to clients.
 **Resolution:** Built `StrategyHeatmap.tsx` with:
@@ -52,7 +52,7 @@ Living list of candidate features, enhancements, and statutory maintenance items
 ---
 
 ## B-5 · Advisor Workflow & Multi-Client Decoupling
-**Status:** ✅ **COMPLETED** (2026-11-02 `Work/WORK_ORDER_pending_enhancements_and_guardrails.md` · Lane C)
+**Status:** ✅ **COMPLETED** (2026-11-02 `Work/Completed/WORK_ORDER_pending_enhancements_and_guardrails.md` · Lane C)
 
 **Context:** Transition the tool from a personal scenario modeler to a client-agnostic advisory workstation.
 **Resolution:**

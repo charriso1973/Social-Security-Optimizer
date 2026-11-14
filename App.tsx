@@ -329,7 +329,7 @@ const App: React.FC = () => {
           calYear,
           'Your Strategy': userPt.cumulative - b62,
           ...(showOptimalLine && optPt ? { 'Optimal Strategy': optPt.cumulative - b62 } : {}),
-          'Both at FRA (67)': fraPt ? fraPt.cumulative - b62 : 0,
+          'Both at 67': fraPt ? fraPt.cumulative - b62 : 0,
           'Both at 70': age70Pt ? age70Pt.cumulative - b62 : 0,
           'Baseline (Both 62)': 0,
         });
@@ -389,7 +389,7 @@ const App: React.FC = () => {
       let min = 0;
       let max = 0;
       chartData.forEach(d => {
-        ['Your Strategy', 'Optimal Strategy', 'Both at FRA (67)', 'Both at 70'].forEach(k => {
+        ['Your Strategy', 'Optimal Strategy', 'Both at 67', 'Both at 70'].forEach(k => {
           if (typeof d[k] === 'number') {
             if (d[k] < min) min = d[k];
             if (d[k] > max) max = d[k];
@@ -616,7 +616,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-3">
              <div 
                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-full text-xs font-medium border border-emerald-200" 
-               title={`Bend Points: $${BEND_POINT_1} / $${BEND_POINT_2}. Official published SSA constants.`}
+               title={`Latest published SSA bend points (eligibility year ${STATUTORY_BEND_POINT_YEAR}): $${BEND_POINT_1} / $${BEND_POINT_2}. Each worker uses the bend points of the year they turn 62.`}
              >
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span>SSA Official: <strong>{STATUTORY_BEND_POINT_YEAR || 2027}</strong></span>
@@ -1236,7 +1236,7 @@ const App: React.FC = () => {
                         </ReferenceLine>
                         <Line type="monotone" dataKey="Your Strategy" stroke="#2563eb" strokeWidth={3.5} dot={false} />
                         {showOptimalLine && (<Line type="monotone" dataKey="Optimal Strategy" stroke="#15803d" strokeWidth={3} dot={false} />)}
-                        <Line type="monotone" dataKey="Both at FRA (67)" stroke="#d97706" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+                        <Line type="monotone" dataKey="Both at 67" stroke="#d97706" strokeWidth={2} dot={false} strokeDasharray="4 4" />
                         <Line type="monotone" dataKey="Both at 70" stroke="#7c3aed" strokeWidth={2} dot={false} strokeDasharray="4 4" />
                       </>
                     ) : (

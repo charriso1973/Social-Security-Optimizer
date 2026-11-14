@@ -1,6 +1,6 @@
 {
   "name": "Social Security Optimizer",
-  "description": "A high-precision Social Security strategy dashboard using 2025 actuarial constants to simulate and optimize household lifetime benefits.",
+  "description": "A client-side Social Security claiming model that compares all 81 household claim-age pairs using published SSA data and statutory benefit rules.",
   "requestFramePermissions": [],
   "majorCapabilities": []
 }

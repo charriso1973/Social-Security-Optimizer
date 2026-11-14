@@ -78,7 +78,7 @@ export const StrategyHeatmap: React.FC<StrategyHeatmapProps> = ({
             onClick={() => onSelectStrategy(67, 67)}
             className="text-xs px-2.5 py-1.5 rounded-md font-medium bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition-colors"
           >
-            FRA (67/67)
+            Both 67 (67/67)
           </button>
           <button
             type="button"

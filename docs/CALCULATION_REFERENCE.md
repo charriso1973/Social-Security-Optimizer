@@ -241,7 +241,7 @@ For each pair of claim ages (Partner A 62–70 x Partner B 62–70), the tool ru
 - **Total ($M)** view: each cell shows its end value in millions.
 - Cell color blends smoothly from red (lowest value) through amber to green (highest value).
 - Clicking a cell selects that pair for the rest of the page.
-- Buttons above the grid set the pair to the highest-value pair, to 67/67 ("FRA (67/67)") or to 62/62 ("Early (62/62)").
+- Buttons above the grid set the pair to the highest-value pair, to 67/67 ("Both 67 (67/67)") or to 62/62 ("Early (62/62)").
 
 With the default inputs (Single; PIAs $3,451 and $3,401; life expectancies 85 and 95; both born 1973; 2.5% inflation; 5% real return; Future dollars; no solvency reduction), the grid's highest-value pair is 62/69 and its lowest is 70/62, a spread of about $791,000. Results change with every input.
 
@@ -249,7 +249,7 @@ With the default inputs (Single; PIAs $3,451 and $3,401; life expectancies 85 an
 
 For each strategy, the chart plots its cumulative value minus the cumulative value of both partners claiming at 62, by age (the older partner's age when birth years differ). Where a line crosses $0, the strategy has caught up with claiming at 62.
 
-Because cumulative values include investment returns on benefits already received, this crossover comes later than a simple break-even that ignores returns when the entered return is positive, and it moves as the return changes. Lines shown: Your Strategy, Optimal Strategy (optional), Both at FRA (67) and Both at 70. "Both at FRA (67)" means both partners claim at 67, which is FRA only for births 1960 and later.
+Because cumulative values include investment returns on benefits already received, this crossover comes later than a simple break-even that ignores returns when the entered return is positive, and it moves as the return changes. Lines shown: Your Strategy, Optimal Strategy (optional), Both at 67 and Both at 70. Age 67 is the full retirement age for births 1960 and later.
 
 ### 8.3 Cumulative chart ("Cumulative Portfolio")
 
