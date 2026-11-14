@@ -71,11 +71,11 @@ Audience: financial advisors and their clients reviewing how the tool calculates
 - **Key message:** After the first death, the survivor keeps the larger of the two benefits, subject to statutory adjustments.
 - **Bullets:**
   - Based on the deceased's benefit, including delayed credits
-  - Reduced if started before survivor FRA
   - Floor of 82.5% of PIA if deceased claimed early
   - Delaying the higher earner raises the survivor amount
+  - Starts 60 to survivor FRA (reduced if early), chosen by value
 - **Visual suggestion:** Two-bar comparison: survivor benefit when the higher earner claimed at 62 vs. at 70.
-- **Speaker notes:** If the higher earner claimed at 70 with a $3,000 PIA, the survivor can receive $3,720. If the higher earner claimed early and died young, the survivor's amount is limited but can't fall below 82.5% of the deceased's PIA. The tool starts survivor benefits at the later of the year after the death and the survivor's selected claim age.
+- **Speaker notes:** If the higher earner claimed at 70 with a $3,000 PIA, the survivor can receive $3,720. If the higher earner claimed early and died young, the survivor's amount is limited but can't fall below 82.5% of the deceased's PIA. A survivor can start a reduced survivor benefit as early as 60 or wait for a larger one; the tool picks the start age worth the most for the entered life expectancy and return.
 - **Source:** §6
 
 ## Slide 7 — How the projection works
@@ -135,7 +135,7 @@ Audience: financial advisors and their clients reviewing how the tool calculates
   - Grid ranking ignores income taxes
   - Single-year tax estimate; no state tax
 - **Visual suggestion:** Plain text list; no graphics needed.
-- **Speaker notes:** The reference document lists every simplification. The most important for planning are fixed life expectancies and the simplified survivor timing, so it's worth testing several life expectancy assumptions before drawing conclusions.
+- **Speaker notes:** The reference document lists every simplification. The most important for planning is the fixed life expectancy: it drives both the claim-age ranking and when a survivor benefit is started, so it's worth testing several life expectancy assumptions before drawing conclusions.
 - **Source:** §11
 
 ## Slide 12 — Data handling and disclosure

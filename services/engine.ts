@@ -239,8 +239,25 @@ const spousalFor = (x: Claimant, y: Claimant) => {
   return { startAge, amount: Math.floor(excess * spousalReductionFactor(startAge, x.birthYear)) };
 };
 
+// How the rest of the simulation values money, so the survivor start age can be
+// chosen on the same basis as the grid's ranking.
+export interface ValuationContext {
+  cola: number;
+  nominalReturn: number;
+  solvencyFactor: number;
+  solvencyStartYear?: number;
+  basisYear: number;
+}
+
 // Survivor benefit for x after y dies (y is alive through age y.lifeExpectancy).
-const survivorFor = (x: Claimant, y: Claimant) => {
+// SSA lets a widow(er) start a reduced survivor benefit as early as 60 or wait for
+// a larger one, independently of their own retirement benefit. The model tries
+// every start age from the later of the year after the death and 60 up to the
+// survivor FRA (waiting longer adds nothing), values x's resulting stream --
+// max(own benefit from x's claim age, survivor benefit from the start age) -- with
+// the simulation's COLA, return and solvency cut, and keeps the highest-value
+// start age (earliest on a tie).
+const survivorFor = (x: Claimant, y: Claimant, ctx: ValuationContext) => {
   const yClaimed = y.claimAge <= y.lifeExpectancy;
   let base: number;
   let ribLimCap = Infinity;
@@ -259,12 +276,28 @@ const survivorFor = (x: Claimant, y: Claimant) => {
     const deathAge = Math.min(y.lifeExpectancy + 1, DRC_MAX_AGE);
     base = deathAge * 12 > y.fra ? Math.floor(y.pia * benefitAdjustmentFactor(deathAge, y.birthYear)) : y.pia;
   }
-  // Model simplification: survivor benefits start at the later of the first year
-  // after the death and x's selected claim age (always >= 62, so >= age 60).
   const firstYearAfterDeath = y.birthYear + y.lifeExpectancy + 1;
-  const startAge = Math.max(firstYearAfterDeath - x.birthYear, x.claimAge);
-  const amount = Math.floor(Math.min(base * survivorReductionFactor(startAge, x.birthYear), ribLimCap));
-  return { startAge, amount };
+  const lastYearX = x.birthYear + x.lifeExpectancy;
+  const minStart = Math.max(firstYearAfterDeath - x.birthYear, SURVIVOR_MIN_AGE);
+  const maxStart = Math.max(minStart, Math.ceil(survivorFraMonths(x.birthYear) / 12));
+  const amountAt = (startAge: number) =>
+    Math.floor(Math.min(base * survivorReductionFactor(startAge, x.birthYear), ribLimCap));
+
+  let best = { startAge: minStart, amount: amountAt(minStart) };
+  let bestValue = -Infinity;
+  for (let startAge = minStart; startAge <= maxStart; startAge++) {
+    const amount = amountAt(startAge);
+    let value = 0;
+    for (let year = firstYearAfterDeath; year <= lastYearX; year++) {
+      const age = year - x.birthYear;
+      const paid = Math.max(age >= x.claimAge ? x.ownBenefit : 0, age >= startAge ? amount : 0);
+      const solvency = ctx.solvencyStartYear === undefined || year >= ctx.solvencyStartYear ? ctx.solvencyFactor : 1;
+      value += paid * Math.pow(1 + ctx.cola, year - ctx.basisYear) * solvency
+        * Math.pow(1 + ctx.nominalReturn, lastYearX - year);
+    }
+    if (value > bestValue) { bestValue = value; best = { startAge, amount }; }
+  }
+  return best;
 };
 
 export const simulateHousehold = (
@@ -302,8 +335,12 @@ export const simulateHousehold = (
 
   const spousalA = spousalFor(a, b);
   const spousalB = spousalFor(b, a);
-  const survivorA = survivorFor(a, b);
-  const survivorB = survivorFor(b, a);
+  const valuation: ValuationContext = {
+    cola: safeCola, nominalReturn: nominalReturnRate, solvencyFactor: safeSolvency,
+    solvencyStartYear: options.solvencyStartYear, basisYear,
+  };
+  const survivorA = survivorFor(a, b, valuation);
+  const survivorB = survivorFor(b, a, valuation);
 
   let cumulative = 0;
 

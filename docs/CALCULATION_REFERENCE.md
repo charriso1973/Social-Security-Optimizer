@@ -180,7 +180,9 @@ If the deceased partner claimed before FRA, the survivor benefit can't exceed th
 
 ### 6.4 When survivor benefits start
 
-The tool starts survivor benefits at the later of (a) the first year after the death, and (b) the survivor's selected claim age. Because selected claim ages are 62 or later, survivor benefits in the model start at age 62 or later (the statutory minimum is 60). This is a simplification: the tool doesn't search separately for "survivor benefit first, own benefit later" sequences (section 11).
+A widow(er) can start a reduced survivor benefit as early as age 60, or wait for a larger one, independently of when they claim their own retirement benefit. The tool tries every survivor start age from the later of (a) the first year after the death and (b) age 60, up to the survivor's survivor FRA (waiting longer adds nothing). For each start age it values the survivor's payments for the rest of their life, max(own benefit from their selected claim age, survivor benefit from that start age), using the same COLA, rate of return and solvency setting as the rest of the projection. It keeps the start age with the highest value, the earliest on a tie.
+
+In practice, a survivor expected to live a short time after the death starts early (reduced), and one expected to live a long time waits for the unreduced amount. Meanwhile they collect their own benefit if they've claimed it.
 
 ### 6.5 Worked examples
 
@@ -190,6 +192,8 @@ The tool starts survivor benefits at the later of (a) the first year after the d
 - Age 64 (survivor): $4,000 x (1 − 0.285 x 36/84) = $3,511.43. The limit is the larger of $2,800 and $3,300 (82.5% of $4,000), which is $3,300, so Partner B receives **$3,300**.
 
 **Case `survivor-deceased-with-drcs`:** Partner A has a PIA of $3,000, claims at 70 ($3,720) and is alive through 75. Partner B (PIA $1,000) claims at 67. From age 76, Partner B receives **$3,720**, which includes Partner A's delayed credits.
+
+**Cases `survivor-reduced-different-ages` and `survivor-waits-when-longer-lived`:** Partner A (born 1965, PIA $3,000) claims at 67 and is alive through 68. Partner B (born 1970, PIA $800) claimed at 62 and receives $560 plus a $455 spousal excess. After A's death, B (age 64) can start a survivor benefit of $2,633 now, $2,755 at 65, $2,877 at 66, or $3,000 at 67. At a 0% return: if B lives to 70, starting at 64 is worth the most (**$2,633** from 64). If B lives to 90, waiting to 67 is worth the most, so B keeps the own $560 until then and receives **$3,000** from 67.
 
 **Case `survivor-deceased-died-before-claiming`:** Partner A has a PIA of $3,000, planned to claim at 70, and dies after age 64. Partner B (PIA $500) claims at 67 and receives **$3,000**, based on Partner A's PIA.
 
@@ -390,7 +394,7 @@ A note appears under Claim Age when a partner is already older than the selected
 
 - **Annual steps.** Benefits are modeled by calendar year, not month. Claim ages are whole years. Benefits are paid for the full year in which the claim age and the life expectancy age are reached.
 - **Fixed life expectancies.** Each partner is assumed to live to the entered age. Survival probabilities are not modeled.
-- **Survivor timing.** Survivor benefits start at the later of the year after the first death and the survivor's selected claim age. Strategies that take the survivor benefit first and switch to one's own benefit later (or the reverse) are not searched separately.
+- **Survivor timing.** The survivor start age is chosen by value for the entered life expectancy and return (section 6.4). The survivor's own claim age is still the one selected in the grid; the two are not optimized jointly after the death.
 - **Death before claiming.** Delayed credits for a partner who dies before claiming accrue through the year after their entered life expectancy, capped at age 70.
 - **Benefits not modeled:** earnings test (benefits withheld while working before FRA), marriage-duration requirements (generally 9 months for survivor benefits, 1 year for spousal benefits), divorced-spouse, child and disability benefits, and the family maximum.
 - **Taxes in the grid.** The 81-pair ranking uses benefits before income tax. The tax panel is a separate single-year estimate.

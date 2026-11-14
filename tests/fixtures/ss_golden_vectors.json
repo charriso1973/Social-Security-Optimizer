@@ -337,7 +337,41 @@
     {
       "id": "survivor-reduced-different-ages",
       "rule": "household",
-      "source": "A (1965) claims at FRA 67 in 2032 and is alive through age 68 (2033). B (1970, survivor FRA 67) claimed own at 62: 800 x 0.70 = 560; spousal excess 700 from 62, 60 months early = 35% reduction -> 455. A dead from 2034 (B age 64): 3000 x (1 - 0.285 x 36/84) = 2633.57 -> 2633; A claimed at FRA so no RIB-LIM.",
+      "source": "A (1965) claims at FRA 67 in 2032 and is alive through age 68 (2033). B (1970, survivor FRA 67) claimed own at 62: 800 x 0.70 = 560; spousal excess 700 from 62, 60 months early = 35% reduction -> 455. A dead from 2034 (B age 64). Survivor start age is chosen by value (0% return, B alive through 70): start 64 = 3000 x (1 - 0.285 x 36/84) = 2633 x 7 yrs = 18,431; 65 = 2755 x 6 + 560 = 17,090; 66 = 2877 x 5 + 1,120 = 15,505; 67 = 3000 x 4 + 1,680 = 13,680 -> start at 64. A claimed at FRA so no RIB-LIM. Survivor may start at 60+ independently of own benefit (SSA Act 202(e); POMS RS 00615.301).",
+      "input": {
+        "persons": {
+          "a": {
+            "birth_year": 1965,
+            "pia": 3000,
+            "life_expectancy": 68
+          },
+          "b": {
+            "birth_year": 1970,
+            "pia": 800,
+            "life_expectancy": 70
+          }
+        },
+        "claim_age_a": 67,
+        "claim_age_b": 62,
+        "married": true,
+        "cola": 0,
+        "real_return": 0,
+        "solvency": 1,
+        "solvency_start_year": null,
+        "current_year": 2026
+      },
+      "expected": {
+        "monthly_b_at_age": {
+          "63": 1015,
+          "64": 2633,
+          "70": 2633
+        }
+      }
+    },
+    {
+      "id": "survivor-waits-when-longer-lived",
+      "rule": "household",
+      "source": "Same household with B alive through 90 (0% return): start 64 = 2633 x 27 = 71,091; 65 = 2755 x 26 + 560 = 72,190; 66 = 2877 x 25 + 1,120 = 73,045; 67 = 3000 x 24 + 1,680 = 73,680 -> wait for the unreduced survivor benefit at survivor FRA 67, keeping own 560 until then.",
       "input": {
         "persons": {
           "a": {
@@ -362,8 +396,9 @@
       },
       "expected": {
         "monthly_b_at_age": {
-          "63": 1015,
-          "64": 2633
+          "64": 560,
+          "66": 560,
+          "67": 3000
         }
       }
     },
