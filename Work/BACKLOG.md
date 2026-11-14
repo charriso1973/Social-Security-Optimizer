@@ -83,3 +83,24 @@ Living list of candidate features, enhancements, and statutory maintenance items
 **Plan:**
 - Audit environment configurations and ensure zero API dependencies for client-side evaluation.
 - Document deployment steps, build triggers, and embed instructions.
+
+---
+
+## B-8 · Engine Statutory Accuracy & Golden-Vector Tests
+**Status:** ✅ **COMPLETED** (2026-11-14 `Work/Completed/WORK_ORDER_engine_statutory_accuracy.md`)
+
+**Context:** The 2026-11-14 docs audit found engine simplifications that produce wrong amounts for common client cases: FRA fixed at 67, 2027 bend points for every birth year, pre-1987 earnings not indexed, spousal reduction timing, survivor RIB-LIM/reduction, haircut timing, dollar basis, stale tax tables.
+
+---
+
+## B-9 · Documentation Rewrite (Calculation Reference + Presentation Outline)
+**Status:** 📋 **OPEN**, unblocked (`Work/Open/WORK_ORDER_documentation_rewrite.md`)
+
+**Context:** The two docs in `docs/` diverged and contain overclaims and factual errors. Replace them with one calculation reference and one slide outline, descriptive language only.
+
+---
+
+## B-10 · Finance Tracker Engine Parity
+**Status:** 📋 **OPEN**, unblocked (`D:\Antigravity Projects\Finance Tracker\Work\Open\WORK_ORDER_ss_engine_parity.md`)
+
+**Context:** `Finance Tracker/backend/ss_optimizer.py` is a port of the older engine and shares its gaps; its forecaster also has a survivor-before-claim gap. Parity is enforced through the shared `tests/fixtures/ss_golden_vectors.json`.

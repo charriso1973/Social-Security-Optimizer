@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "generated": "2026-11-14",
+  "description": "Language-neutral golden vectors for the Social Security engine. Canonical copy lives in the Social Security Optimizer repo; the Finance Tracker copies this file and runs the engine-rule cases against backend/ss_optimizer.py. Expected values are hand-derived from the cited statute/POMS/IRS source, not from engine output.",
+  "constants_vintage": {
+    "bend_point_year": 2027,
+    "awi_through": 2025,
+    "tax_max_through": 2027,
+    "tax_table_year": 2027
+  },
+  "conventions": {
+    "household": "Annual simulation. Inputs are snake_case. persons.{a,b} = {birth_year, pia, life_expectancy}. 'monthly_X_at_age' maps person X's age in a calendar year to the monthly benefit paid that year (benefit_X / 12). 'monthly_X_in_year' maps a calendar year to the monthly benefit. cola=0 so dollar basis does not affect results. A person is alive in every year where age <= life_expectancy.",
+    "rounding": "PIA truncated to the dime; monthly benefits floored to the dollar."
+  },
+  "cases": [
+    {
+      "id": "adj-fra67",
+      "rule": "own_benefit",
+      "source": "SSA Act 202(q), 202(w); 20 CFR 404.410, 404.313; FRA 67 for births 1960+ (SSA Act 216(l))",
+      "input": { "birth_year": 1973, "pia": 3000, "claim_ages": [62, 67, 70] },
+      "expected": { "factors": [0.70, 1.00, 1.24], "monthly": [2100, 3000, 3720] }
+    },
+    {
+      "id": "adj-fra66y8m",
+      "rule": "own_benefit",
+      "source": "FRA 66 and 8 months for 1958 births (SSA Act 216(l)); 56 months early = 36 x 5/9% + 20 x 5/12%; 4 and 40 months of DRC at 2/3% per month",
+      "input": { "birth_year": 1958, "pia": 3000, "claim_ages": [62, 67, 70] },
+      "expected": { "factors": [0.716667, 1.026667, 1.266667], "monthly": [2150, 3080, 3800] }
+    },
+    {
+      "id": "adj-fra66",
+      "rule": "own_benefit",
+      "source": "FRA 66 for 1943-1954 births; 48 months early = 25%; 48 months DRC = 32%",
+      "input": { "birth_year": 1954, "pia": 3000, "claim_ages": [62, 66, 70] },
+      "expected": { "factors": [0.75, 1.00, 1.32], "monthly": [2250, 3000, 3960] }
+    },
+    {
+      "id": "bp-eligibility-2026",
+      "rule": "pia_from_aime",
+      "source": "SSA Act 215(a)(1); bend points for eligibility year 2026 = $1,286 / $7,749 (ssa.gov/oact/COLA/bendpoints.html). 0.9x1286 + 0.32x6463 + 0.15x251 = 3263.21 -> 3263.20",
+      "input": { "birth_year": 1964, "aime": 8000 },
+      "expected": { "pia": 3263.2, "bend_point_year": 2026 }
+    },
+    {
+      "id": "bp-eligibility-2027",
+      "rule": "pia_from_aime",
+      "source": "Bend points for eligibility year 2027 = $1,340 / $8,077. 0.9x1340 + 0.32x6660 = 3337.20",
+      "input": { "birth_year": 1965, "aime": 8000 },
+      "expected": { "pia": 3337.2, "bend_point_year": 2027 }
+    },
+    {
+      "id": "bp-future-eligibility",
+      "rule": "pia_from_aime",
+      "source": "Eligibility after the latest published bend point year: latest bend points with indexing frozen at latest AWI (SSA statement convention)",
+      "input": { "birth_year": 1973, "aime": 8000 },
+      "expected": { "pia": 3337.2, "bend_point_year": 2027 }
+    },
+    {
+      "id": "pia-tiers-truncation",
+      "rule": "pia_from_aime",
+      "source": "0.9x1340 + 0.32x6737 + 0.15x1923 = 1206 + 2155.84 + 288.45 = 3650.29 -> truncated to dime 3650.20 (SSA Act 215(a)(1)(A))",
+      "input": { "birth_year": 1973, "aime": 10000 },
+      "expected": { "pia": 3650.2, "bend_point_year": 2027 }
+    },
+    {
+      "id": "earnings-pre1987-indexing",
+      "rule": "pia_from_earnings",
+      "source": "SSA Act 215(b); 20 CFR 404.211. Born 1960: indexing year 2020, bend points 2022 ($1,024 / $6,172). 1950 is before the 1951 computation period and is excluded. 1980: min(30000, cap 25900) x AWI2020 55628.60 / AWI1980 12513.46 = 115138.48. 2021: after the indexing year, nominal 100000. AIME = floor(215138.48 / 420) = 512; PIA = 0.9 x 512 = 460.80.",
+      "input": { "birth_year": 1960, "earnings": [[1950, 5000], [1980, 30000], [2021, 100000]], "current_year": 2026 },
+      "expected": { "aime": 512, "pia": 460.8, "bend_point_year": 2022, "indexing_year": 2020 }
+    },
+    {
+      "id": "spousal-starts-at-later-filing",
+      "rule": "household",
+      "source": "Spousal excess payable only once the worker has filed (deemed filing, BBA 2015 sec. 831; 20 CFR 404.623); reduction based on months of spousal entitlement before FRA (SSA Act 202(q); 20 CFR 404.410). B files at 62 (own 70% of 1000 = 700); A files at 70 when B is 70, so the 1000 excess is unreduced.",
+      "input": {
+        "persons": { "a": { "birth_year": 1973, "pia": 4000, "life_expectancy": 90 }, "b": { "birth_year": 1973, "pia": 1000, "life_expectancy": 90 } },
+        "claim_age_a": 70, "claim_age_b": 62, "married": true,
+        "cola": 0, "real_return": 0, "solvency": 1, "solvency_start_year": null, "current_year": 2026
+      },
+      "expected": { "monthly_b_at_age": { "62": 700, "69": 700, "70": 1700 } }
+    },
+    {
+      "id": "survivor-riblim-and-reduction",
+      "rule": "household",
+      "source": "Widow(er) benefit = 100% of deceased PIA, reduced for survivor age (28.5% at 60, prorated to survivor FRA; SSA Act 202(e)(2), 202(q)); limited by RIB-LIM to the larger of the deceased's reduced benefit or 82.5% of PIA (SSA Act 202(e)(2)(D); POMS RS 00615.320). While both are alive (age 63), B gets own 700 plus the spousal excess (2000 - 1000) reduced 35% for starting at 62 = 650, total 1350. A dies after age 63; B starts survivor benefits at 64: 4000 x (1 - 0.285 x 36/84) = 3511.43, limited to max(2800, 3300) = 3300.",
+      "input": {
+        "persons": { "a": { "birth_year": 1973, "pia": 4000, "life_expectancy": 63 }, "b": { "birth_year": 1973, "pia": 1000, "life_expectancy": 92 } },
+        "claim_age_a": 62, "claim_age_b": 62, "married": true,
+        "cola": 0, "real_return": 0, "solvency": 1, "solvency_start_year": null, "current_year": 2026
+      },
+      "expected": { "monthly_b_at_age": { "63": 1350, "64": 3300 } }
+    },
+    {
+      "id": "survivor-deceased-with-drcs",
+      "rule": "household",
+      "source": "Survivor at/after survivor FRA receives the deceased's benefit including delayed retirement credits (SSA Act 202(e)(2)(C), 202(w)). Before the death, B's spousal excess (1500 - 1000) starts at 70 when A files, unreduced.",
+      "input": {
+        "persons": { "a": { "birth_year": 1973, "pia": 3000, "life_expectancy": 75 }, "b": { "birth_year": 1973, "pia": 1000, "life_expectancy": 90 } },
+        "claim_age_a": 70, "claim_age_b": 67, "married": true,
+        "cola": 0, "real_return": 0, "solvency": 1, "solvency_start_year": null, "current_year": 2026
+      },
+      "expected": { "monthly_b_at_age": { "67": 1000, "70": 1500, "76": 3720 } }
+    },
+    {
+      "id": "survivor-deceased-died-before-claiming",
+      "rule": "household",
+      "source": "If the worker dies before FRA without having claimed, the widow(er) base is 100% of PIA (no DRCs, no RIB-LIM). Survivor benefit starts at the later of the year after death and the survivor's selected claim age (model simplification).",
+      "input": {
+        "persons": { "a": { "birth_year": 1973, "pia": 3000, "life_expectancy": 64 }, "b": { "birth_year": 1973, "pia": 500, "life_expectancy": 90 } },
+        "claim_age_a": 70, "claim_age_b": 67, "married": true,
+        "cola": 0, "real_return": 0, "solvency": 1, "solvency_start_year": null, "current_year": 2026
+      },
+      "expected": { "monthly_b_at_age": { "66": 0, "67": 3000 } }
+    },
+    {
+      "id": "survivor-reduced-different-ages",
+      "rule": "household",
+      "source": "A (1965) claims at FRA 67 in 2032 and is alive through age 68 (2033). B (1970, survivor FRA 67) claimed own at 62: 800 x 0.70 = 560; spousal excess 700 from 62, 60 months early = 35% reduction -> 455. A dead from 2034 (B age 64): 3000 x (1 - 0.285 x 36/84) = 2633.57 -> 2633; A claimed at FRA so no RIB-LIM.",
+      "input": {
+        "persons": { "a": { "birth_year": 1965, "pia": 3000, "life_expectancy": 68 }, "b": { "birth_year": 1970, "pia": 800, "life_expectancy": 90 } },
+        "claim_age_a": 67, "claim_age_b": 62, "married": true,
+        "cola": 0, "real_return": 0, "solvency": 1, "solvency_start_year": null, "current_year": 2026
+      },
+      "expected": { "monthly_b_at_age": { "63": 1015, "64": 2633 } }
+    },
+    {
+      "id": "solvency-start-year",
+      "rule": "household",
+      "source": "Model assumption: payable-benefit factor applied only from the solvency start year onward (2026 Trustees Report projects OASI reserve depletion in 2032).",
+      "input": {
+        "persons": { "a": { "birth_year": 1965, "pia": 1000, "life_expectancy": 90 }, "b": { "birth_year": 1965, "pia": 0, "life_expectancy": 90 } },
+        "claim_age_a": 62, "claim_age_b": 62, "married": false,
+        "cola": 0, "real_return": 0, "solvency": 0.8, "solvency_start_year": 2034, "current_year": 2026
+      },
+      "expected": { "monthly_a_in_year": { "2027": 700, "2033": 700, "2034": 560 } }
+    },
+    {
+      "id": "taxable-ss-mfj-85",
+      "rule": "taxable_ss",
+      "source": "IRC 86; IRS Pub 915 worksheet. PI = 50000 + 20000 = 70000; 0.85 x (70000 - 44000) + min(20000, 6000) = 28100 < 0.85 x 40000",
+      "input": { "ss": 40000, "other_income": 50000, "tax_exempt_interest": 0, "married": true },
+      "expected": { "taxable_ss": 28100 }
+    },
+    {
+      "id": "taxable-ss-single-85",
+      "rule": "taxable_ss",
+      "source": "IRC 86. PI = 20000 + 15000 = 35000; 0.85 x 1000 + min(15000, 4500) = 5350",
+      "input": { "ss": 30000, "other_income": 20000, "tax_exempt_interest": 0, "married": false },
+      "expected": { "taxable_ss": 5350 }
+    },
+    {
+      "id": "taxable-ss-below-t1",
+      "rule": "taxable_ss",
+      "source": "IRC 86. PI = 10000 + 15000 = 25000 <= 32000",
+      "input": { "ss": 30000, "other_income": 10000, "tax_exempt_interest": 0, "married": true },
+      "expected": { "taxable_ss": 0 }
+    },
+    {
+      "id": "taxable-ss-tax-exempt-interest",
+      "rule": "taxable_ss",
+      "source": "IRC 86(b)(2)(B): tax-exempt interest counts in provisional income. PI = 20000 + 10000 + 15000 = 45000; 0.85 x 11000 + 4500 = 13850 < 25500",
+      "input": { "ss": 30000, "other_income": 20000, "tax_exempt_interest": 10000, "married": false },
+      "expected": { "taxable_ss": 13850 }
+    },
+    {
+      "id": "fed-tax-single-2027",
+      "rule": "federal_tax",
+      "source": "Rev. Proc. 2026-35 (tax year 2027). 0.10 x 12800 + 0.12 x 39225 + 0.22 x 7975",
+      "input": { "taxable_income": 60000, "married": false, "table_year": 2027 },
+      "expected": { "tax": 7741.5, "marginal_rate": 0.22 }
+    },
+    {
+      "id": "fed-tax-mfj-2027-top-bracket",
+      "rule": "federal_tax",
+      "source": "Rev. Proc. 2026-35 (tax year 2027), MFJ brackets through 37%",
+      "input": { "taxable_income": 1000000, "married": true, "table_year": 2027 },
+      "expected": { "tax": 289640, "marginal_rate": 0.37 }
+    },
+    {
+      "id": "std-deduction-single-65",
+      "rule": "standard_deduction",
+      "source": "Rev. Proc. 2026-35: $16,600 + $2,100 additional (unmarried, 65+)",
+      "input": { "married": false, "count_65_plus": 1, "table_year": 2027 },
+      "expected": { "standard_deduction": 18700 }
+    },
+    {
+      "id": "std-deduction-mfj-two-65",
+      "rule": "standard_deduction",
+      "source": "Rev. Proc. 2026-35: $33,200 + 2 x $1,700 additional (married, 65+)",
+      "input": { "married": true, "count_65_plus": 2, "table_year": 2027 },
+      "expected": { "standard_deduction": 36600 }
+    }
+  ]
+}

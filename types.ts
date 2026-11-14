@@ -20,6 +20,7 @@ export interface PersonProfile {
   // Computed
   pia: number; // Primary Insurance Amount
   aime: number; // Average Indexed Monthly Earnings
+  piaWarnings?: string[]; // Data gaps or caveats from the PIA computation
 }
 
 export interface SimulationYear {
@@ -66,12 +67,16 @@ export interface TaxInput {
 
 export interface TaxResult {
   filingStatus: 'Single' | 'Married Joint';
-  rmd: number;
-  taxableRmd: number;
+  rmd: number; // Gross RMD
+  taxableRmd: number; // After QCD
+  qcd: number;
   ssBenefit: number;
   taxableSS: number;
   otherIncome: number;
+  taxExemptInterest: number;
   agi: number;
+  standardDeduction: number; // Including the 65+ additional amount
+  seniorDeduction: number;
   taxableIncome: number;
   federalTax: number;
   marginalRate: number;

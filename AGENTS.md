@@ -8,7 +8,10 @@ This codebase is generic (Partner A / Partner B) and intended for financial advi
 ## Architecture
 - **Framework**: React 19 + TypeScript + Vite + Tailwind CSS (via CDN) + Lucide Icons + Recharts.
 - **Pure Math Engine**: `services/engine.ts` performs all calculations client-side (no backend or external API required).
-- **Statutory Rules**: `constants.ts` defines SSA bend points, wage caps (through 2026: $184,500), and National Average Wage Index (AWI) series.
+- **Statutory Rules**:
+  - `constants.ts` is **generated** by `npm run update-ssa` (`scripts/update_ssa_factors.py`): bend points by eligibility year, wage caps and AWI from 1951, plus app defaults and input bounds. Do not hand-edit its series; change the script's template and regenerate.
+  - `statutoryTables.ts` is **hand-maintained**: FRA and survivor FRA by birth year, survivor reduction and RIB-LIM factors, Trustees Report solvency figures, RMD ages and Uniform Lifetime Table, and federal tax tables (`TAX_TABLE_YEAR`). Each table cites its source; update year and values together.
+- **Tests**: `npm test` (vitest) runs `tests/engine.test.ts` against `tests/fixtures/ss_golden_vectors.json`. Expected values are hand-derived from statute, never copied from engine output. The Finance Tracker (`D:\Antigravity Projects\Finance Tracker\backend\test_ss_parity.py`) consumes the same fixture, so schema changes must be coordinated with it.
 - **Visualizations**:
   - Strategy Grid Heatmap (81-pair claiming matrix with optimal vs. worst-case spread).
   - Strategy Comparison Chart with dual views:

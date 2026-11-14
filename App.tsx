@@ -4,14 +4,18 @@ import {
 } from 'recharts';
 import { Calculator, DollarSign, Heart, TrendingUp, Info, AlertTriangle, User, Settings, Edit3, FileText, ArrowRight, ArrowLeft, Trophy, Target, Scissors, Lightbulb, Bomb, Minus, Pin, PinOff, Calendar, RefreshCcw, Sparkles } from 'lucide-react';
 
-import { PersonProfile, TaxInput } from './types';
-import { 
+import { PersonProfile } from './types';
+import {
   DEFAULT_EARNINGS_CSV, DEFAULT_EARNINGS_CSV_B, DEFAULT_BIRTH_YEAR, ASSUMED_COLA, DEFAULT_REAL_RETURN, DEFAULT_PIA_A, DEFAULT_PIA_B,
   SS_MIN_COLA_PCT, SS_MAX_COLA_PCT, SS_MIN_REAL_RETURN_PCT, SS_MAX_REAL_RETURN_PCT,
-  SS_MIN_LIFE_EXP, SS_MAX_LIFE_EXP, SS_MAX_MONTHLY_PIA, SS_MIN_CLAIM_AGE, SS_MAX_CLAIM_AGE,
-  STATUTORY_BEND_POINT_YEAR, BEND_POINT_1, BEND_POINT_2
+  SS_MIN_LIFE_EXP, SS_MAX_LIFE_EXP, SS_MAX_MONTHLY_PIA, SS_MIN_BIRTH_YEAR, SS_MAX_BIRTH_YEAR,
+  STATUTORY_BEND_POINT_YEAR, BEND_POINT_1, BEND_POINT_2, DATA_AWI_SERIES, TAX_MAX_SERIES
 } from './constants';
-import { parseEarningsCSV, calculatePIA, simulateHousehold, calculateStrategyGrid, calculatePIAFromAIME, estimateAIMEFromPIA, calculateTaxSnapshot } from './services/engine';
+import {
+  DEFAULT_SOLVENCY, TRUSTEES_REPORT_YEAR, SOLVENCY_OASI, SOLVENCY_OASDI, TAX_TABLE_YEAR,
+  rmdStartAge, UNIFORM_LIFETIME_TABLE, QCD_LIMIT, QCD_MIN_AGE
+} from './statutoryTables';
+import { parseEarningsCSV, calculatePIA, simulateHousehold, calculateStrategyGrid, piaFromAimeForBirthYear, estimateAIMEFromPIA, calculateTaxSnapshot, CURRENT_YEAR, SimulationOptions } from './services/engine';
 import { StrategyHeatmap } from './StrategyHeatmap';
 
 // Formatting Helpers
@@ -115,7 +119,8 @@ const App: React.FC = () => {
   const [cola, setCola] = useState<number>(ASSUMED_COLA);
   const [realReturn, setRealReturn] = useState<number>(DEFAULT_REAL_RETURN);
   const [applyHaircut, setApplyHaircut] = useState<boolean>(false);
-  const [haircutPct, setHaircutPct] = useState<number>(83);
+  const [haircutPct, setHaircutPct] = useState<number>(DEFAULT_SOLVENCY.payablePct);
+  const [haircutStartYear, setHaircutStartYear] = useState<number>(DEFAULT_SOLVENCY.startYear);
   const [showOptimalLine, setShowOptimalLine] = useState<boolean>(true);
   const [chartMode, setChartMode] = useState<'crossover' | 'cumulative'>('crossover');
   const [useRealDollars, setUseRealDollars] = useState<boolean>(false); // False = Future/Nominal, True = Today's/Real
@@ -142,6 +147,7 @@ const App: React.FC = () => {
   const [otherIncA2, setOtherIncA2] = useState<number>(5000);
   const [otherIncA3, setOtherIncA3] = useState<number>(0);
   const [qcdA, setQcdA] = useState<number>(0);
+  const [taxExemptA, setTaxExemptA] = useState<number>(0);
 
   // --- Partner B State ---
   const [nameB, setNameB] = useState<string>('Partner B');
@@ -161,70 +167,79 @@ const App: React.FC = () => {
   const [otherIncB2, setOtherIncB2] = useState<number>(0);
   const [otherIncB3, setOtherIncB3] = useState<number>(0);
   const [qcdB, setQcdB] = useState<number>(30000);
+  const [taxExemptB, setTaxExemptB] = useState<number>(0);
 
 
   // --- Derived Profiles ---
   const profileA: PersonProfile = useMemo(() => {
     let pia = 0;
     let aime = 0;
+    let piaWarnings: string[] = [];
     const parsed = parseEarningsCSV(earningsA);
 
     if (piaMethodA === 'manual') {
       pia = manualPiaA;
-      aime = estimateAIMEFromPIA(manualPiaA);
+      aime = estimateAIMEFromPIA(manualPiaA, birthYearA);
     } else if (piaMethodA === 'aime') {
       aime = manualAimeA;
-      pia = calculatePIAFromAIME(manualAimeA);
+      pia = piaFromAimeForBirthYear(manualAimeA, birthYearA);
     } else {
       const result = calculatePIA(birthYearA, parsed);
       pia = result.pia;
       aime = result.aime;
+      piaWarnings = result.warnings;
     }
 
     return {
       id: 'A', name: nameA, birthYear: birthYearA, lifeExpectancy: lifeExpA,
       claimAge: claimAgeA, earningsInput: earningsA, parsedEarnings: parsed, 
-      pia, aime, piaInputMethod: piaMethodA, manualPia: manualPiaA, manualAime: manualAimeA
+      pia, aime, piaWarnings, piaInputMethod: piaMethodA, manualPia: manualPiaA, manualAime: manualAimeA
     };
   }, [nameA, earningsA, birthYearA, lifeExpA, claimAgeA, piaMethodA, manualPiaA, manualAimeA]);
 
   const profileB: PersonProfile = useMemo(() => {
     let pia = 0;
     let aime = 0;
+    let piaWarnings: string[] = [];
     const parsed = parseEarningsCSV(earningsB);
 
     if (piaMethodB === 'manual') {
       pia = manualPiaB;
-      aime = estimateAIMEFromPIA(manualPiaB);
+      aime = estimateAIMEFromPIA(manualPiaB, birthYearB);
     } else if (piaMethodB === 'aime') {
       aime = manualAimeB;
-      pia = calculatePIAFromAIME(manualAimeB);
+      pia = piaFromAimeForBirthYear(manualAimeB, birthYearB);
     } else {
       const result = calculatePIA(birthYearB, parsed);
       pia = result.pia;
       aime = result.aime;
+      piaWarnings = result.warnings;
     }
 
     return {
       id: 'B', name: nameB, birthYear: birthYearB, lifeExpectancy: lifeExpB,
       claimAge: claimAgeB, earningsInput: earningsB, parsedEarnings: parsed, 
-      pia, aime, piaInputMethod: piaMethodB, manualPia: manualPiaB, manualAime: manualAimeB
+      pia, aime, piaWarnings, piaInputMethod: piaMethodB, manualPia: manualPiaB, manualAime: manualAimeB
     };
   }, [nameB, earningsB, birthYearB, lifeExpB, claimAgeB, piaMethodB, manualPiaB, manualAimeB]);
 
   // --- Calculations ---
   const solvencyFactor = applyHaircut ? (haircutPct / 100) : 1.0;
+  const simOptions: SimulationOptions = useMemo(() => ({
+    solvencyStartYear: applyHaircut ? haircutStartYear : undefined,
+    currentYear: CURRENT_YEAR,
+  }), [applyHaircut, haircutStartYear]);
   
   // If "Today's Dollars" is checked, we turn off COLA in the simulation engine
   const effectiveCola = useRealDollars ? 0 : cola;
 
   const marriedAnalysis = useMemo(() => {
-    return calculateStrategyGrid(profileA, profileB, true, effectiveCola, realReturn, solvencyFactor);
-  }, [profileA, profileB, effectiveCola, realReturn, solvencyFactor]);
+    return calculateStrategyGrid(profileA, profileB, true, effectiveCola, realReturn, solvencyFactor, simOptions);
+  }, [profileA, profileB, effectiveCola, realReturn, solvencyFactor, simOptions]);
 
   const unmarriedAnalysis = useMemo(() => {
-    return calculateStrategyGrid(profileA, profileB, false, effectiveCola, realReturn, solvencyFactor);
-  }, [profileA, profileB, effectiveCola, realReturn, solvencyFactor]);
+    return calculateStrategyGrid(profileA, profileB, false, effectiveCola, realReturn, solvencyFactor, simOptions);
+  }, [profileA, profileB, effectiveCola, realReturn, solvencyFactor, simOptions]);
 
   const strategyAnalysis = isMarried ? marriedAnalysis : unmarriedAnalysis;
   const localOptimal = strategyAnalysis.max;
@@ -242,29 +257,29 @@ const App: React.FC = () => {
   const betterStrategyAvailable = globalOptimal.totalCash > localOptimal.totalCash + 1000;
 
   const userSim = useMemo(() => {
-    return simulateHousehold(profileA, profileB, claimAgeA, claimAgeB, isMarried, effectiveCola, realReturn, solvencyFactor);
-  }, [profileA, profileB, claimAgeA, claimAgeB, isMarried, effectiveCola, realReturn, solvencyFactor]);
+    return simulateHousehold(profileA, profileB, claimAgeA, claimAgeB, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions);
+  }, [profileA, profileB, claimAgeA, claimAgeB, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions]);
 
   const optimalSim = useMemo(() => {
-    return simulateHousehold(profileA, profileB, localOptimal.ageA, localOptimal.ageB, isMarried, effectiveCola, realReturn, solvencyFactor);
-  }, [profileA, profileB, localOptimal, isMarried, effectiveCola, realReturn, solvencyFactor]);
+    return simulateHousehold(profileA, profileB, localOptimal.ageA, localOptimal.ageB, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions);
+  }, [profileA, profileB, localOptimal, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions]);
 
   const worstSim = useMemo(() => {
     const { min } = strategyAnalysis;
-    return simulateHousehold(profileA, profileB, min.ageA, min.ageB, isMarried, effectiveCola, realReturn, solvencyFactor);
-  }, [profileA, profileB, strategyAnalysis, isMarried, effectiveCola, realReturn, solvencyFactor]);
+    return simulateHousehold(profileA, profileB, min.ageA, min.ageB, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions);
+  }, [profileA, profileB, strategyAnalysis, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions]);
 
   const baseline62Sim = useMemo(() => {
-    return simulateHousehold(profileA, profileB, 62, 62, isMarried, effectiveCola, realReturn, solvencyFactor);
-  }, [profileA, profileB, isMarried, effectiveCola, realReturn, solvencyFactor]);
+    return simulateHousehold(profileA, profileB, 62, 62, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions);
+  }, [profileA, profileB, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions]);
 
   const fraSim = useMemo(() => {
-    return simulateHousehold(profileA, profileB, 67, 67, isMarried, effectiveCola, realReturn, solvencyFactor);
-  }, [profileA, profileB, isMarried, effectiveCola, realReturn, solvencyFactor]);
+    return simulateHousehold(profileA, profileB, 67, 67, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions);
+  }, [profileA, profileB, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions]);
 
   const age70Sim = useMemo(() => {
-    return simulateHousehold(profileA, profileB, 70, 70, isMarried, effectiveCola, realReturn, solvencyFactor);
-  }, [profileA, profileB, isMarried, effectiveCola, realReturn, solvencyFactor]);
+    return simulateHousehold(profileA, profileB, 70, 70, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions);
+  }, [profileA, profileB, isMarried, effectiveCola, realReturn, solvencyFactor, simOptions]);
 
   // --- Chart Data Preparation ---
   const { chartData, deathRefs } = useMemo(() => {
@@ -411,115 +426,109 @@ const App: React.FC = () => {
   const taxAnalysis = useMemo(() => {
      const otherIncA = otherIncA1 + otherIncA2 + otherIncA3;
      const otherIncB = otherIncB1 + otherIncB2 + otherIncB3;
-     const currentYear = 2025;
-     const birthYearOlder = Math.min(birthYearA, birthYearB);
-     const yearsTo75 = 75 - (currentYear - birthYearOlder);
-     const inflationTo75 = Math.pow(1 + cola, yearsTo75 > 0 ? yearsTo75 : 0);
-     const displayFactor = useRealDollars ? 1.0 : inflationTo75;
 
-     // 1. Calculate Real Balance Growth (Always calc in Real for tax basis)
+     // One snapshot year for the household: the year the older partner turns 75.
+     const snapshotYear = Math.min(birthYearA, birthYearB) + 75;
+     const ageSnapA = snapshotYear - birthYearA;
+     const ageSnapB = snapshotYear - birthYearB;
+     const yearsToSnapshot = snapshotYear - CURRENT_YEAR;
+     const displayFactor = useRealDollars ? 1.0 : Math.pow(1 + cola, Math.max(0, yearsToSnapshot));
+
+     // 1. Real balance growth to the snapshot year (tax math runs in today's dollars)
      const growBalanceReal = (startBal: number, annualContrib: number, birthYear: number, contribStopAge: number) => {
-        const ageNow = currentYear - birthYear;
-        const age75 = 75;
-        const yearsTotal = age75 - ageNow;
+        const yearsTotal = yearsToSnapshot;
         if (yearsTotal <= 0) return startBal;
-        
+        const ageNow = CURRENT_YEAR - birthYear;
         const yearsContrib = Math.max(0, Math.min(yearsTotal, contribStopAge - ageNow));
         const yearsGrowOnly = Math.max(0, yearsTotal - yearsContrib);
-        
-        // Use Real Return rate
         const rate = realReturn;
-        
+
         let fv = startBal * Math.pow(1 + rate, yearsContrib);
         if (rate !== 0) {
            fv += annualContrib * ((Math.pow(1 + rate, yearsContrib) - 1) / rate);
         } else {
            fv += annualContrib * yearsContrib;
         }
-        fv = fv * Math.pow(1 + rate, yearsGrowOnly);
-        return fv;
+        return fv * Math.pow(1 + rate, yearsGrowOnly);
      };
 
      const projBalRealA = growBalanceReal(savingsA, contribA, birthYearA, contribEndAgeA);
      const projBalRealB = growBalanceReal(savingsB, contribB, birthYearB, contribEndAgeB);
 
-     // 2. Get Real SS Benefit at 75
-     const getProjectedRealSS = (profile: PersonProfile, claimAge: number) => {
-        const year75 = profile.birthYear + 75;
-        const row = userSim.find(r => r.year === year75);
-        
-        let simBenefit = 0;
-        if (row) {
-            simBenefit = profile.id === 'A' ? row.benefitA : row.benefitB;
-        } else {
-            const lastRow = userSim[userSim.length-1];
-            if (!lastRow) return 0;
-            const yearsMissed = year75 - lastRow.year;
-            const base = profile.id === 'A' ? lastRow.benefitA : lastRow.benefitB;
-            simBenefit = base * Math.pow(1 + effectiveCola, yearsMissed);
-        }
-        
-        // If simulation was Nominal (!useRealDollars), deflate to get Real
-        if (!useRealDollars) {
-            const startYear = Math.min(profileA.birthYear, profileB.birthYear) + 62;
-            const deflator = Math.pow(1 + cola, year75 - startYear);
-            return simBenefit / deflator;
-        }
-        // If simulation was Real, return as is
-        return simBenefit;
-     };
+     // 2. RMD divisor (null until the owner reaches their RMD age) and QCD limits
+     const rmdDivisor = (birthYear: number, age: number) =>
+        age >= rmdStartAge(birthYear) ? UNIFORM_LIFETIME_TABLE[Math.min(age, 100)] ?? null : null;
+     const allowedQcd = (qcd: number, age: number) => age >= QCD_MIN_AGE ? Math.min(qcd, QCD_LIMIT) : 0;
+     const qcdAppliedA = allowedQcd(qcdA, ageSnapA);
+     const qcdAppliedB = allowedQcd(qcdB, ageSnapB);
+     const qcdNotes: string[] = [];
+     if (qcdA > QCD_LIMIT || qcdB > QCD_LIMIT) qcdNotes.push(`QCDs limited to ${formatCurrency(QCD_LIMIT)} per IRA owner (${TAX_TABLE_YEAR}).`);
+     if ((qcdA > 0 && ageSnapA < QCD_MIN_AGE) || (qcdB > 0 && ageSnapB < QCD_MIN_AGE)) qcdNotes.push('QCDs require age 70 1/2; not applied for a partner younger than that in the snapshot year.');
 
-     const ssRealA = getProjectedRealSS(profileA, claimAgeA);
-     const ssRealB = getProjectedRealSS(profileB, claimAgeB);
-     
-     // 3. Calculate Tax (Using 2025 Brackets, so Inputs must be Real)
-     // Assumption: User inputs otherInc and QCD are in Today's Dollars (Real)
-     const resA = calculateTaxSnapshot(projBalRealA, qcdA, ssRealA, otherIncA, false);
-     const resB = calculateTaxSnapshot(projBalRealB, qcdB, ssRealB, otherIncB, false);
-     
+     // 3. Real SS benefit in the snapshot year (simulation is nominal in Future mode)
+     const row = userSim.find(r => r.year === snapshotYear);
+     const deflator = useRealDollars ? 1 : Math.pow(1 + cola, yearsToSnapshot);
+     const ssRealA = row ? row.benefitA / deflator : 0;
+     const ssRealB = row ? row.benefitB / deflator : 0;
+
+     // 4. Tax (current tax tables applied in today's dollars)
+     // Assumption: other income, tax-exempt interest and QCD inputs are in today's dollars.
+     const base = { taxYear: snapshotYear };
+     const resA = calculateTaxSnapshot({
+       ...base, balance: projBalRealA, rmdDivisor: rmdDivisor(birthYearA, ageSnapA), qcd: qcdAppliedA,
+       ssBenefit: ssRealA, otherIncome: otherIncA, taxExemptInterest: taxExemptA, isMarried: false, count65Plus: ageSnapA >= 65 ? 1 : 0,
+     });
+     const resB = calculateTaxSnapshot({
+       ...base, balance: projBalRealB, rmdDivisor: rmdDivisor(birthYearB, ageSnapB), qcd: qcdAppliedB,
+       ssBenefit: ssRealB, otherIncome: otherIncB, taxExemptInterest: taxExemptB, isMarried: false, count65Plus: ageSnapB >= 65 ? 1 : 0,
+     });
+
      const totalSingleTaxReal = resA.federalTax + resB.federalTax;
      const totalSingleAGIReal = resA.agi + resB.agi;
      const singleEffectiveRate = totalSingleAGIReal > 0 ? totalSingleTaxReal / totalSingleAGIReal : 0;
-     
-     const resJoint = calculateTaxSnapshot(
-       projBalRealA + projBalRealB, qcdA + qcdB, ssRealA + ssRealB, otherIncA + otherIncB, true
-     );
+
+     // Joint: each spouse's RMD uses their own divisor, so combine the gross RMDs
+     // by passing the summed RMD with a divisor of 1.
+     const jointGrossRmd = resA.rmd + resB.rmd;
+     const resJoint = calculateTaxSnapshot({
+       ...base, balance: jointGrossRmd, rmdDivisor: jointGrossRmd > 0 ? 1 : null, qcd: qcdAppliedA + qcdAppliedB,
+       ssBenefit: ssRealA + ssRealB, otherIncome: otherIncA + otherIncB, taxExemptInterest: taxExemptA + taxExemptB,
+       isMarried: true, count65Plus: (ageSnapA >= 65 ? 1 : 0) + (ageSnapB >= 65 ? 1 : 0),
+     });
      const marriedEffectiveRate = resJoint.agi > 0 ? resJoint.federalTax / resJoint.agi : 0;
-     
-     // 4. Prepare Display Values (Inflate if Nominal Mode selected)
+
+     // 5. Display values (inflate if Future mode selected)
      const inflate = (val: number) => val * displayFactor;
 
      const rawDiff = resJoint.federalTax - totalSingleTaxReal;
      const diffPct = totalSingleTaxReal > 0 ? rawDiff / totalSingleTaxReal : 0;
-     
+
      return {
-        single: { 
-            taxA: inflate(resA.federalTax), 
-            taxB: inflate(resB.federalTax), 
-            total: inflate(totalSingleTaxReal), 
-            agi: inflate(totalSingleAGIReal), 
+        snapshotYear, ageSnapA, ageSnapB, qcdNotes,
+        single: {
+            total: inflate(totalSingleTaxReal),
+            agi: inflate(totalSingleAGIReal),
             effectiveRate: singleEffectiveRate, // Rate stays same
-            detailsA: resA, 
+            detailsA: resA,
             detailsB: resB,
-            // Summed components
             rmd: inflate(resA.rmd + resB.rmd),
             taxableRmd: inflate(resA.taxableRmd + resB.taxableRmd),
             ssBenefit: inflate(resA.ssBenefit + resB.ssBenefit),
             taxableSS: inflate(resA.taxableSS + resB.taxableSS),
             otherIncome: inflate(resA.otherIncome + resB.otherIncome),
-            qcd: inflate(qcdA + qcdB)
+            deductions: inflate(resA.standardDeduction + resA.seniorDeduction + resB.standardDeduction + resB.seniorDeduction),
         },
-        joint: { 
-            total: inflate(resJoint.federalTax), 
-            agi: inflate(resJoint.agi), 
-            effectiveRate: marriedEffectiveRate, 
+        joint: {
+            total: inflate(resJoint.federalTax),
+            agi: inflate(resJoint.agi),
+            effectiveRate: marriedEffectiveRate,
             details: resJoint,
             rmd: inflate(resJoint.rmd),
             taxableRmd: inflate(resJoint.taxableRmd),
             ssBenefit: inflate(resJoint.ssBenefit),
             taxableSS: inflate(resJoint.taxableSS),
             otherIncome: inflate(resJoint.otherIncome),
-            qcd: inflate(qcdA + qcdB)
+            deductions: inflate(resJoint.standardDeduction + resJoint.seniorDeduction),
         },
         diff: inflate(rawDiff),
         diffPct: diffPct,
@@ -530,15 +539,15 @@ const App: React.FC = () => {
         },
         currencyMode: useRealDollars ? "Today's Dollars" : "Future Dollars"
      };
-  }, [savingsA, savingsB, contribA, contribB, contribEndAgeA, contribEndAgeB, otherIncA1, otherIncA2, otherIncA3, otherIncB1, otherIncB2, otherIncB3, qcdA, qcdB, realReturn, cola, birthYearA, birthYearB, claimAgeA, claimAgeB, userSim, profileA, profileB, useRealDollars, effectiveCola]);
+  }, [savingsA, savingsB, contribA, contribB, contribEndAgeA, contribEndAgeB, otherIncA1, otherIncA2, otherIncA3, otherIncB1, otherIncB2, otherIncB3, qcdA, qcdB, taxExemptA, taxExemptB, realReturn, cola, birthYearA, birthYearB, userSim, useRealDollars]);
 
   // Guarded setters for inputs
   const handleManualPiaA = (val: number) => setManualPiaA(Math.max(0, Math.min(SS_MAX_MONTHLY_PIA, isNaN(val) ? 0 : val)));
   const handleManualPiaB = (val: number) => setManualPiaB(Math.max(0, Math.min(SS_MAX_MONTHLY_PIA, isNaN(val) ? 0 : val)));
   const handleManualAimeA = (val: number) => setManualAimeA(Math.max(0, Math.min(50000, isNaN(val) ? 0 : val)));
   const handleManualAimeB = (val: number) => setManualAimeB(Math.max(0, Math.min(50000, isNaN(val) ? 0 : val)));
-  const handleBirthYearA = (val: number) => setBirthYearA(Math.max(1920, Math.min(2010, isNaN(val) ? DEFAULT_BIRTH_YEAR : val)));
-  const handleBirthYearB = (val: number) => setBirthYearB(Math.max(1920, Math.min(2010, isNaN(val) ? DEFAULT_BIRTH_YEAR : val)));
+  const handleBirthYearA = (val: number) => setBirthYearA(Math.max(SS_MIN_BIRTH_YEAR, Math.min(SS_MAX_BIRTH_YEAR, isNaN(val) ? DEFAULT_BIRTH_YEAR : val)));
+  const handleBirthYearB = (val: number) => setBirthYearB(Math.max(SS_MIN_BIRTH_YEAR, Math.min(SS_MAX_BIRTH_YEAR, isNaN(val) ? DEFAULT_BIRTH_YEAR : val)));
   const handleLifeExpA = (val: number) => setLifeExpA(Math.max(SS_MIN_LIFE_EXP, Math.min(SS_MAX_LIFE_EXP, isNaN(val) ? 85 : val)));
   const handleLifeExpB = (val: number) => setLifeExpB(Math.max(SS_MIN_LIFE_EXP, Math.min(SS_MAX_LIFE_EXP, isNaN(val) ? 95 : val)));
   const handleColaChange = (val: number) => setCola(Math.max(0, Math.min(SS_MAX_COLA_PCT / 100, isNaN(val) ? ASSUMED_COLA : val)));
@@ -549,7 +558,8 @@ const App: React.FC = () => {
     setCola(ASSUMED_COLA);
     setRealReturn(DEFAULT_REAL_RETURN);
     setApplyHaircut(false);
-    setHaircutPct(83);
+    setHaircutPct(DEFAULT_SOLVENCY.payablePct);
+    setHaircutStartYear(DEFAULT_SOLVENCY.startYear);
     setUseRealDollars(false);
     setNameA('Partner A');
     setBirthYearA(DEFAULT_BIRTH_YEAR);
@@ -768,6 +778,18 @@ const App: React.FC = () => {
                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900" 
                         />
                          <div className="flex justify-between text-xs text-slate-400 mt-1"><span>50%</span><span>75%</span><span>100%</span></div>
+                         <div className="flex items-center justify-between mt-3">
+                           <label className="text-xs font-medium text-slate-500 uppercase">Reduction starts in</label>
+                           <input
+                             type="number" min={CURRENT_YEAR} max={2100}
+                             value={haircutStartYear}
+                             onChange={e => { const v = parseInt(e.target.value); if (!isNaN(v)) setHaircutStartYear(Math.max(CURRENT_YEAR, Math.min(2100, v))); }}
+                             className="w-20 text-right text-sm border-b border-slate-300 focus:border-slate-900 outline-none bg-transparent font-bold text-slate-700"
+                           />
+                         </div>
+                         <p className="text-[10px] text-slate-400 mt-2 leading-tight">
+                           {TRUSTEES_REPORT_YEAR} Trustees Report: retirement (OASI) fund depleted in {SOLVENCY_OASI.depletionYear}, {SOLVENCY_OASI.payablePct}% payable; combined OASDI in {SOLVENCY_OASDI.depletionYear}, {SOLVENCY_OASDI.payablePct}%. Applied from the start year onward.
+                         </p>
                       </div>
                     )}
                  </div>
@@ -792,7 +814,7 @@ const App: React.FC = () => {
                    <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase"><Calendar className="w-3 h-3"/> Birth Year</label>
                    <input 
                      type="number" 
-                     min="1900" max="2010"
+                     min={SS_MIN_BIRTH_YEAR} max={SS_MAX_BIRTH_YEAR}
                      value={birthYearA} 
                      onChange={e => handleBirthYearA(parseInt(e.target.value) || DEFAULT_BIRTH_YEAR)}
                      className="w-20 text-right text-sm border-b border-slate-300 focus:border-blue-500 outline-none bg-transparent font-bold text-slate-700"
@@ -803,14 +825,17 @@ const App: React.FC = () => {
               <div className="space-y-4">
                 <div>
                    <label className="block text-xs font-medium text-slate-500 uppercase mb-2">Life Expectancy: <span className="text-blue-600 font-bold text-base ml-1">{lifeExpA}</span></label>
-                   <input type="range" min="50" max="105" step="1" value={lifeExpA} onChange={e => handleLifeExpA(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-                   <div className="flex justify-between text-xs text-slate-400 mt-1"><span>60</span><span>70</span><span>80</span><span>90</span><span>100</span></div>
+                   <input type="range" min={SS_MIN_LIFE_EXP} max={SS_MAX_LIFE_EXP} step="1" value={lifeExpA} onChange={e => handleLifeExpA(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                   <div className="flex justify-between text-xs text-slate-400 mt-1"><span>45</span><span>60</span><span>75</span><span>90</span><span>105</span></div>
                 </div>
 
                 <div>
                    <label className="block text-xs font-medium text-slate-500 uppercase mb-2">Claim Age: <span className="text-blue-600 font-bold text-base ml-1">{claimAgeA}</span></label>
                    <input type="range" min="62" max="70" step="1" value={claimAgeA} onChange={e => setClaimAgeA(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
                    <div className="flex justify-between text-xs text-slate-400 mt-1"><span>62</span><span>66</span><span>70</span></div>
+                   {CURRENT_YEAR - birthYearA > claimAgeA && (
+                     <p className="text-[10px] text-amber-700 mt-1 leading-tight">Already older than {claimAgeA} in {CURRENT_YEAR}; claim ages before {CURRENT_YEAR - birthYearA} are hypothetical.</p>
+                   )}
                 </div>
                 
                 <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
@@ -861,6 +886,11 @@ const App: React.FC = () => {
                    <div className="mt-2 pt-2 border-t border-slate-50 text-xs flex justify-between items-center text-slate-500">
                       <span>Effective PIA: <strong>{formatCurrency(profileA.pia)}/mo</strong></span>
                    </div>
+                   {profileA.piaWarnings && profileA.piaWarnings.length > 0 && (
+                     <ul className="mt-1 space-y-0.5 text-[10px] text-amber-700 leading-tight list-disc pl-4">
+                       {profileA.piaWarnings.map(w => <li key={w}>{w}</li>)}
+                     </ul>
+                   )}
                 </div>
               </div>
             </div>
@@ -882,7 +912,7 @@ const App: React.FC = () => {
                    <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase"><Calendar className="w-3 h-3"/> Birth Year</label>
                    <input 
                      type="number" 
-                     min="1900" max="2010"
+                     min={SS_MIN_BIRTH_YEAR} max={SS_MAX_BIRTH_YEAR}
                      value={birthYearB} 
                      onChange={e => handleBirthYearB(parseInt(e.target.value) || DEFAULT_BIRTH_YEAR)}
                      className="w-20 text-right text-sm border-b border-slate-300 focus:border-rose-500 outline-none bg-transparent font-bold text-slate-700"
@@ -892,14 +922,17 @@ const App: React.FC = () => {
               <div className="space-y-4">
                 <div>
                    <label className="block text-xs font-medium text-slate-500 uppercase mb-2">Life Expectancy: <span className="text-rose-600 font-bold text-base ml-1">{lifeExpB}</span></label>
-                   <input type="range" min="50" max="105" step="1" value={lifeExpB} onChange={e => handleLifeExpB(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-600" />
-                   <div className="flex justify-between text-xs text-slate-400 mt-1"><span>60</span><span>70</span><span>80</span><span>90</span><span>100</span></div>
+                   <input type="range" min={SS_MIN_LIFE_EXP} max={SS_MAX_LIFE_EXP} step="1" value={lifeExpB} onChange={e => handleLifeExpB(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-600" />
+                   <div className="flex justify-between text-xs text-slate-400 mt-1"><span>45</span><span>60</span><span>75</span><span>90</span><span>105</span></div>
                 </div>
 
                 <div>
                    <label className="block text-xs font-medium text-slate-500 uppercase mb-2">Claim Age: <span className="text-rose-600 font-bold text-base ml-1">{claimAgeB}</span></label>
                    <input type="range" min="62" max="70" step="1" value={claimAgeB} onChange={e => setClaimAgeB(Number(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-rose-600" />
                    <div className="flex justify-between text-xs text-slate-400 mt-1"><span>62</span><span>66</span><span>70</span></div>
+                   {CURRENT_YEAR - birthYearB > claimAgeB && (
+                     <p className="text-[10px] text-amber-700 mt-1 leading-tight">Already older than {claimAgeB} in {CURRENT_YEAR}; claim ages before {CURRENT_YEAR - birthYearB} are hypothetical.</p>
+                   )}
                 </div>
                 
                 <div className="border-t border-slate-100 pt-3 flex items-center justify-between opacity-80" title="Change this in Partner A's card">
@@ -950,6 +983,11 @@ const App: React.FC = () => {
                    <div className="mt-2 pt-2 border-t border-slate-50 text-xs flex justify-between items-center text-slate-500">
                       <span>Effective PIA: <strong>{formatCurrency(profileB.pia)}/mo</strong></span>
                    </div>
+                   {profileB.piaWarnings && profileB.piaWarnings.length > 0 && (
+                     <ul className="mt-1 space-y-0.5 text-[10px] text-amber-700 leading-tight list-disc pl-4">
+                       {profileB.piaWarnings.map(w => <li key={w}>{w}</li>)}
+                     </ul>
+                   )}
                 </div>
               </div>
             </div>
@@ -1119,7 +1157,7 @@ const App: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 text-[10px] text-amber-700 bg-amber-50 px-3 py-1.5 rounded-md mb-4 border border-amber-100">
                   <Info className="w-3 h-3 flex-shrink-0" />
-                  <span>Simulations utilize 2026 SSA Actuarial Constants (Bend Points, Tax Max through 2026, AWI). Projections assume current statutory schedules.</span>
+                  <span>SSA data: bend points through {STATUTORY_BEND_POINT_YEAR}, wage index through {DATA_AWI_SERIES[DATA_AWI_SERIES.length - 1].year}, wage cap through {Math.max(...Object.keys(TAX_MAX_SERIES).map(Number))}. Benefits in {useRealDollars ? `${CURRENT_YEAR} dollars` : `future dollars (COLA from ${CURRENT_YEAR})`}. Projections assume current law.</span>
               </div>
               <div className="w-full h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1217,7 +1255,7 @@ const App: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                 <div className="p-6 border-b border-slate-100">
                    <h3 className="text-lg font-bold text-slate-800">Federal Tax Implications with RMDs</h3>
-                   <p className="text-sm text-slate-500">Snapshot at Age 75: Projected Tax Liability Comparison</p>
+                   <p className="text-sm text-slate-500">Snapshot year {taxAnalysis.snapshotYear} ({nameA} age {taxAnalysis.ageSnapA}, {nameB} age {taxAnalysis.ageSnapB}): the year the older partner turns 75</p>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2">
                    <div className="p-6 border-r border-slate-200 bg-slate-50/50">
@@ -1251,7 +1289,7 @@ const App: React.FC = () => {
                               </div>
                            </div>
                            <div className="pt-2 border-t border-slate-200">
-                              <label className="text-xs font-medium text-slate-700 block mb-2">Other Income (pension, interest, etc) at Age 75</label>
+                              <label className="text-xs font-medium text-slate-700 block mb-2">Other Income (pension, taxable interest, etc.) in Snapshot Year</label>
                               <div className="space-y-2">
                                  <div className="grid grid-cols-2 gap-4"><TaxInputBox value={otherIncA1} onChange={setOtherIncA1} placeholder="Source 1" /><TaxInputBox value={otherIncB1} onChange={setOtherIncB1} placeholder="Source 1" /></div>
                                  <div className="grid grid-cols-2 gap-4"><TaxInputBox value={otherIncA2} onChange={setOtherIncA2} placeholder="Source 2" /><TaxInputBox value={otherIncB2} onChange={setOtherIncB2} placeholder="Source 2" /></div>
@@ -1259,20 +1297,25 @@ const App: React.FC = () => {
                               </div>
                            </div>
                            <div className="pt-2 border-t border-slate-200">
-                              <label className="text-xs font-medium text-slate-700 block mb-2">Charitable Giving (QCDs) at Age 75</label>
+                              <label className="text-xs font-medium text-slate-700 block mb-2">Tax-Exempt Interest (counts toward SS taxation)</label>
+                              <div className="grid grid-cols-2 gap-4"><TaxInputBox value={taxExemptA} onChange={setTaxExemptA} /><TaxInputBox value={taxExemptB} onChange={setTaxExemptB} /></div>
+                           </div>
+                           <div className="pt-2 border-t border-slate-200">
+                              <label className="text-xs font-medium text-slate-700 block mb-2">Charitable Giving (QCDs) in Snapshot Year</label>
                               <div className="grid grid-cols-2 gap-4"><TaxInputBox value={qcdA} onChange={setQcdA} /><TaxInputBox value={qcdB} onChange={setQcdB} /></div>
+                              {taxAnalysis.qcdNotes.map(n => <p key={n} className="text-[10px] text-amber-700 mt-1 leading-tight">{n}</p>)}
                            </div>
                            <div className="pt-4 mt-4 border-t border-slate-200">
                                <div className="flex justify-between items-end mb-2">
-                                  <label className="text-xs font-bold text-slate-500 uppercase">Projected Qualified Balance (Age 75, {taxAnalysis.currencyMode})</label>
+                                  <label className="text-xs font-bold text-slate-500 uppercase">Projected Qualified Balance ({taxAnalysis.snapshotYear}, {taxAnalysis.currencyMode})</label>
                                </div>
                                <div className="grid grid-cols-2 gap-4">
                                   <div className="text-right">
-                                     <div className="text-[10px] text-slate-400">Partner A</div>
+                                     <div className="text-[10px] text-slate-400">{nameA}</div>
                                      <div className="text-sm font-bold text-slate-800">{formatCurrency(taxAnalysis.balances.projBalA)}</div>
                                   </div>
                                   <div className="text-right">
-                                     <div className="text-[10px] text-slate-400">Partner B</div>
+                                     <div className="text-[10px] text-slate-400">{nameB}</div>
                                      <div className="text-sm font-bold text-slate-800">{formatCurrency(taxAnalysis.balances.projBalB)}</div>
                                   </div>
                                </div>
@@ -1281,8 +1324,8 @@ const App: React.FC = () => {
                    </div>
                    <div className="p-6 flex flex-col justify-center">
                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-6 flex justify-between">
-                         <span>Tax Liability (Age 75)</span>
-                         <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-[10px] normal-case border border-indigo-100">2025 Brackets</span>
+                         <span>Tax Liability ({taxAnalysis.snapshotYear})</span>
+                         <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-[10px] normal-case border border-indigo-100">{TAX_TABLE_YEAR} Tax Tables</span>
                        </h4>
                        <div className="space-y-6">
                            <div className="grid grid-cols-2 gap-4">
@@ -1291,16 +1334,28 @@ const App: React.FC = () => {
                                  
                                  <div className="space-y-1 mb-4 border-b border-slate-100 pb-3">
                                    <div className="flex justify-between items-center text-[10px]">
-                                     <span className="text-slate-400 whitespace-nowrap">RMDs</span>
+                                     <span className="text-slate-400 whitespace-nowrap">Gross RMD</span>
+                                     <span className="font-semibold text-slate-700">{formatCurrency(taxAnalysis.single.rmd)}</span>
+                                   </div>
+                                   <div className="flex justify-between items-center text-[10px]">
+                                     <span className="text-slate-400 whitespace-nowrap">Taxable RMD (after QCD)</span>
                                      <span className="font-semibold text-slate-700">{formatCurrency(taxAnalysis.single.taxableRmd)}</span>
                                    </div>
                                    <div className="flex justify-between items-center text-[10px]">
-                                     <span className="text-slate-400">Taxable SS</span>
+                                     <span className="text-slate-400 whitespace-nowrap">Total SS</span>
+                                     <span className="font-semibold text-slate-700">{formatCurrency(taxAnalysis.single.ssBenefit)}</span>
+                                   </div>
+                                   <div className="flex justify-between items-center text-[10px]">
+                                     <span className="text-slate-400 whitespace-nowrap">Taxable SS</span>
                                      <span className="font-semibold text-slate-700">{formatCurrency(taxAnalysis.single.taxableSS)}</span>
                                    </div>
                                    <div className="flex justify-between items-center text-[10px]">
-                                     <span className="text-slate-400">Other Income</span>
+                                     <span className="text-slate-400 whitespace-nowrap">Other Income</span>
                                      <span className="font-semibold text-slate-700">{formatCurrency(taxAnalysis.single.otherIncome)}</span>
+                                   </div>
+                                   <div className="flex justify-between items-center text-[10px]">
+                                     <span className="text-slate-400 whitespace-nowrap">Deductions</span>
+                                     <span className="font-semibold text-slate-700">-{formatCurrency(taxAnalysis.single.deductions)}</span>
                                    </div>
                                  </div>
 
@@ -1322,16 +1377,28 @@ const App: React.FC = () => {
                                  
                                  <div className="space-y-1 mb-4 border-b border-indigo-100 pb-3 relative z-10">
                                    <div className="flex justify-between items-center text-[10px]">
-                                     <span className="text-indigo-400 whitespace-nowrap">RMDs</span>
+                                     <span className="text-indigo-400 whitespace-nowrap">Gross RMD</span>
+                                     <span className="font-semibold text-indigo-800">{formatCurrency(taxAnalysis.joint.rmd)}</span>
+                                   </div>
+                                   <div className="flex justify-between items-center text-[10px]">
+                                     <span className="text-indigo-400 whitespace-nowrap">Taxable RMD (after QCD)</span>
                                      <span className="font-semibold text-indigo-800">{formatCurrency(taxAnalysis.joint.taxableRmd)}</span>
                                    </div>
                                    <div className="flex justify-between items-center text-[10px]">
-                                     <span className="text-indigo-400">Taxable SS</span>
+                                     <span className="text-indigo-400 whitespace-nowrap">Total SS</span>
+                                     <span className="font-semibold text-indigo-800">{formatCurrency(taxAnalysis.joint.ssBenefit)}</span>
+                                   </div>
+                                   <div className="flex justify-between items-center text-[10px]">
+                                     <span className="text-indigo-400 whitespace-nowrap">Taxable SS</span>
                                      <span className="font-semibold text-indigo-800">{formatCurrency(taxAnalysis.joint.taxableSS)}</span>
                                    </div>
                                    <div className="flex justify-between items-center text-[10px]">
-                                     <span className="text-indigo-400">Other Income</span>
+                                     <span className="text-indigo-400 whitespace-nowrap">Other Income</span>
                                      <span className="font-semibold text-indigo-800">{formatCurrency(taxAnalysis.joint.otherIncome)}</span>
+                                   </div>
+                                   <div className="flex justify-between items-center text-[10px]">
+                                     <span className="text-indigo-400 whitespace-nowrap">Deductions</span>
+                                     <span className="font-semibold text-indigo-800">-{formatCurrency(taxAnalysis.joint.deductions)}</span>
                                    </div>
                                  </div>
 
@@ -1343,11 +1410,11 @@ const App: React.FC = () => {
                            </div>
                            {!taxAnalysis.isSignificant ? (
                              <div className="rounded-lg p-4 border-l-4 bg-slate-100 border-slate-400 text-slate-600">
-                               <div className="flex items-start gap-3"><Minus className="w-5 h-5 flex-shrink-0 mt-0.5" /><div><div className="font-bold text-sm mb-1">No Significant Difference ({formatPct(Math.abs(taxAnalysis.diffPct))})</div><p className="text-xs opacity-90 leading-relaxed">At age 75, filing jointly results in a tax liability nearly identical to filing as two single individuals (within 2%).</p></div></div>
+                               <div className="flex items-start gap-3"><Minus className="w-5 h-5 flex-shrink-0 mt-0.5" /><div><div className="font-bold text-sm mb-1">No Significant Difference ({formatPct(Math.abs(taxAnalysis.diffPct))})</div><p className="text-xs opacity-90 leading-relaxed">In {taxAnalysis.snapshotYear}, filing jointly results in a tax liability nearly identical to filing as two single individuals (within 2%).</p></div></div>
                              </div>
                            ) : (
                              <div className={`rounded-lg p-4 border-l-4 ${taxAnalysis.diff > 0 ? 'bg-red-50 border-red-500 text-red-900' : 'bg-emerald-50 border-emerald-500 text-emerald-900'}`}>
-                               <div className="flex items-start gap-3">{taxAnalysis.diff > 0 ? <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> : <Trophy className="w-5 h-5 flex-shrink-0 mt-0.5" />}<div><div className="font-bold text-sm mb-1">{taxAnalysis.diff > 0 ? "Marriage Penalty Detected" : "Marriage Bonus Detected"}</div><p className="text-xs opacity-90 leading-relaxed">At age 75, filing jointly results in a <span className="font-bold">{formatCurrency(Math.abs(taxAnalysis.diff))} ({formatPct(Math.abs(taxAnalysis.diffPct))}) {taxAnalysis.diff > 0 ? 'increase' : 'decrease'}</span> in annual federal taxes compared to filing as two single individuals.</p>{taxAnalysis.diff > 0 && (<p className="text-[10px] mt-2 opacity-75">This is often caused by the "Tax Torpedo" where combined RMDs and Social Security push the couple into higher tax brackets more quickly than the single brackets allow.</p>)}</div></div>
+                               <div className="flex items-start gap-3">{taxAnalysis.diff > 0 ? <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" /> : <Trophy className="w-5 h-5 flex-shrink-0 mt-0.5" />}<div><div className="font-bold text-sm mb-1">{taxAnalysis.diff > 0 ? "Marriage Penalty Detected" : "Marriage Bonus Detected"}</div><p className="text-xs opacity-90 leading-relaxed">In {taxAnalysis.snapshotYear}, filing jointly results in a <span className="font-bold">{formatCurrency(Math.abs(taxAnalysis.diff))} ({formatPct(Math.abs(taxAnalysis.diffPct))}) {taxAnalysis.diff > 0 ? 'increase' : 'decrease'}</span> in annual federal taxes compared to filing as two single individuals.</p>{taxAnalysis.diff > 0 && (<p className="text-[10px] mt-2 opacity-75">Common causes: the joint thresholds for taxing Social Security ($32k / $44k) are less than double the single thresholds ($25k / $34k), and the 65+ additional deduction is smaller per person on a joint return.</p>)}</div></div>
                              </div>
                            )}
                        </div>

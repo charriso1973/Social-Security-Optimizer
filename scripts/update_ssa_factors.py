@@ -8,7 +8,7 @@ Endpoints:
 
 Design & Safeguards (AMAS / Finance Tracker parity):
 - Uses browser navigation headers to satisfy Akamai bot defense on ssa.gov.
-- Strict short-parse refusal: requires MIN_EXPECTED_ROWS before writing.
+- Strict short-parse refusal: requires minimum row counts (from 1951) before writing.
 - Validates data ordering and reasonable range sanity checks.
 - Atomically regenerates constants.ts and public/statutory_factors.json.
 """
@@ -24,7 +24,12 @@ AWI_URL = "https://www.ssa.gov/oact/cola/awiseries.html"
 BEND_POINTS_URL = "https://www.ssa.gov/oact/COLA/bendpoints.html"
 WAGE_BASE_URL = "https://www.ssa.gov/oact/cola/cbb.html"
 
-MIN_EXPECTED_ROWS = 30
+# Earnings before 1951 do not enter the AIME computation, so the engine needs
+# AWI and wage bases from 1951 onward. Both SSA tables start there or earlier.
+FIRST_EARNINGS_YEAR = 1951
+MIN_AWI_ROWS = 70         # 1951 .. latest (2025 -> 75 rows)
+MIN_WAGE_BASE_ROWS = 70   # 1951 .. latest (2027 -> 77 rows)
+MIN_BEND_POINT_ROWS = 45  # 1979 .. latest (2027 -> 49 rows)
 
 SSA_HEADERS = {
     "User-Agent": (
@@ -111,6 +116,17 @@ def parse_wage_base_html(html: str) -> dict[int, int]:
     out = {}
     i = 0
     while i < len(toks):
+        # Early years are published as ranges, e.g. "1951-54 3,600".
+        m = re.fullmatch(r"((?:19|20)\d{2})-(\d{2})", toks[i])
+        if m and (i + 1) < len(toks):
+            start = int(m.group(1))
+            end = (start // 100) * 100 + int(m.group(2))
+            next_tok = toks[i + 1].replace(",", "")
+            if next_tok.isdigit() and 1937 <= start < end <= this_year:
+                for y in range(start, end + 1):
+                    out[y] = int(next_tok)
+                i += 2
+                continue
         if re.fullmatch(r"(?:19|20)\d{2}", toks[i]):
             y = int(toks[i])
             if 1937 <= y <= this_year and (i + 1) < len(toks):
@@ -140,8 +156,8 @@ def update_constants_file(
 
     now_iso = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Format TAX_MAX_SERIES (filtered for recent years from 1980)
-    recent_caps = {y: wage_caps[y] for y in sorted(wage_caps.keys()) if y >= 1980}
+    # Format TAX_MAX_SERIES (from the first AIME computation year, 1951)
+    recent_caps = {y: wage_caps[y] for y in sorted(wage_caps.keys()) if y >= FIRST_EARNINGS_YEAR}
     cap_lines = []
     items = list(recent_caps.items())
     for k in range(0, len(items), 5):
@@ -149,11 +165,11 @@ def update_constants_file(
         cap_lines.append("  " + ", ".join(f"{y}: {val}" for y, val in chunk))
     formatted_caps = ",\n".join(cap_lines)
 
-    # Format DATA_AWI_SERIES (filtered from 1987)
+    # Format DATA_AWI_SERIES (from 1951)
     recent_awi = [
         {"year": y, "amount": awi_series[y]}
         for y in sorted(awi_series.keys())
-        if y >= 1987
+        if y >= FIRST_EARNINGS_YEAR
     ]
     awi_lines = []
     for k in range(0, len(recent_awi), 3):
@@ -163,6 +179,14 @@ def update_constants_file(
         )
         awi_lines.append(f"  {formatted_chunk}")
     formatted_awi = ",\n".join(awi_lines)
+
+    # Format BEND_POINTS_SERIES (every published eligibility year)
+    bp_items = [(y, bend_points[y]) for y in sorted(bend_points.keys())]
+    bp_lines = []
+    for k in range(0, len(bp_items), 4):
+        chunk = bp_items[k : k + 4]
+        bp_lines.append("  " + ", ".join(f"{y}: [{int(a)}, {int(b)}]" for y, (a, b) in chunk))
+    formatted_bps = ",\n".join(bp_lines)
 
     content = f"""import {{ EarningsRecord }} from './types';
 
@@ -175,16 +199,23 @@ def update_constants_file(
 // - Contribution Base: {WAGE_BASE_URL}
 // ==============================================================================
 
-// Official SSA PIA Formula Bend Points (Eligibility Year {latest_bp_year})
+// Latest published SSA PIA Formula Bend Points (Eligibility Year {latest_bp_year}).
+// Used for the header badge and for workers whose eligibility year (age 62) is
+// after the latest published year. See BEND_POINTS_SERIES for earlier cohorts.
 export const STATUTORY_BEND_POINT_YEAR = {latest_bp_year};
-export const BEND_POINT_1 = {bp1};
-export const BEND_POINT_2 = {bp2};
+export const BEND_POINT_1 = {int(bp1)};
+export const BEND_POINT_2 = {int(bp2)};
+
+// PIA bend points by eligibility year (the year the worker turns 62)
+export const BEND_POINTS_SERIES: Record<number, [number, number]> = {{
+{formatted_bps}
+}};
 
 // Assumptions
 export const ASSUMED_COLA = 0.025;
 export const DEFAULT_REAL_RETURN = 0.05; // 5% Real return
 export const DEFAULT_BIRTH_YEAR = 1973;
-export const FRA_YEARS = 67; // Full Retirement Age for cohorts born 1960+
+// Full retirement age varies by birth year; see fraMonths() in statutoryTables.ts.
 
 // Default PIA Values (Manual Mode Defaults)
 export const DEFAULT_PIA_A = 3451;
@@ -195,8 +226,11 @@ export const SS_MIN_COLA_PCT = 0.0;
 export const SS_MAX_COLA_PCT = 10.0;
 export const SS_MIN_REAL_RETURN_PCT = -10.0;
 export const SS_MAX_REAL_RETURN_PCT = 20.0;
-export const SS_MIN_LIFE_EXP = 40;
-export const SS_MAX_LIFE_EXP = 120;
+export const SS_MIN_LIFE_EXP = 45;
+export const SS_MAX_LIFE_EXP = 105;
+// Engine rules (FRA table, 8%/yr DRCs, deemed filing) are implemented for births 1943+.
+export const SS_MIN_BIRTH_YEAR = 1943;
+export const SS_MAX_BIRTH_YEAR = 2010;
 export const SS_MAX_MONTHLY_PIA = 20000;
 export const SS_MIN_CLAIM_AGE = 62;
 export const SS_MAX_CLAIM_AGE = 70;
@@ -305,16 +339,16 @@ def main():
     print(f"Fetching AWI series from {AWI_URL}...")
     html_awi = fetch_text(AWI_URL)
     awi_series = parse_awi_html(html_awi)
-    if len(awi_series) < MIN_EXPECTED_ROWS:
-        raise ValueError(f"AWI parse failed: only {len(awi_series)} rows (expected >= {MIN_EXPECTED_ROWS})")
+    if len(awi_series) < MIN_AWI_ROWS or min(awi_series, default=9999) > FIRST_EARNINGS_YEAR:
+        raise ValueError(f"AWI parse failed: {len(awi_series)} rows (expected >= {MIN_AWI_ROWS} starting {FIRST_EARNINGS_YEAR})")
     print(f"-> Parsed {len(awi_series)} AWI years (Latest: {max(awi_series.keys())} = ${awi_series[max(awi_series.keys())]:,.2f})")
 
     # 2. Fetch & Parse Bend Points
     print(f"Fetching Bend Points from {BEND_POINTS_URL}...")
     html_bp = fetch_text(BEND_POINTS_URL)
     bend_points = parse_bend_points_html(html_bp)
-    if len(bend_points) < MIN_EXPECTED_ROWS:
-        raise ValueError(f"Bend points parse failed: only {len(bend_points)} rows (expected >= {MIN_EXPECTED_ROWS})")
+    if len(bend_points) < MIN_BEND_POINT_ROWS:
+        raise ValueError(f"Bend points parse failed: only {len(bend_points)} rows (expected >= {MIN_BEND_POINT_ROWS})")
     latest_bp = max(bend_points.keys())
     print(f"-> Parsed {len(bend_points)} Bend Point years (Latest: {latest_bp} = ${bend_points[latest_bp][0]} / ${bend_points[latest_bp][1]})")
 
@@ -322,8 +356,13 @@ def main():
     print(f"Fetching Wage Base series from {WAGE_BASE_URL}...")
     html_wb = fetch_text(WAGE_BASE_URL)
     wage_caps = parse_wage_base_html(html_wb)
-    if len(wage_caps) < MIN_EXPECTED_ROWS:
-        raise ValueError(f"Wage base parse failed: only {len(wage_caps)} rows (expected >= {MIN_EXPECTED_ROWS})")
+    if len(wage_caps) < MIN_WAGE_BASE_ROWS or min(wage_caps, default=9999) > FIRST_EARNINGS_YEAR:
+        raise ValueError(f"Wage base parse failed: {len(wage_caps)} rows (expected >= {MIN_WAGE_BASE_ROWS} starting {FIRST_EARNINGS_YEAR})")
+    gaps = sorted(set(range(FIRST_EARNINGS_YEAR, max(wage_caps) + 1)) - set(wage_caps))
+    if gaps:
+        raise ValueError(f"Wage base parse has gaps: {gaps}")
+    if wage_caps.get(1951) != 3600 or wage_caps.get(1972) != 9000:
+        raise ValueError("Wage base sanity check failed (expected 1951 = 3,600 and 1972 = 9,000)")
     latest_cap = max(wage_caps.keys())
     print(f"-> Parsed {len(wage_caps)} Wage Base years (Latest: {latest_cap} = ${wage_caps[latest_cap]:,})")
 
