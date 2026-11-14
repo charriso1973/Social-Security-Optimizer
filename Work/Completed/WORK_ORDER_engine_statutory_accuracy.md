@@ -159,7 +159,7 @@ Also add cases for each tax table value after Lane D (standard deduction incl. 6
     | Longevity preset | 70/62 / 70/70 / $1,003k | unchanged | 70/62 / 70/70 / $1,253k |
 
     Causes: the Asymmetric best pair and the higher 70/62 value come from Lane B1 (unreduced spousal excess once the higher earner files at 70). The married worst pair moving away from 62/62 comes from Lane B2 (RIB-LIM floor of 82.5% of PIA when the deceased claimed early). The roughly 25% rise in every Future-dollar total comes from Lane C2 (COLA now compounds from 2026 instead of the older partner's 62nd-birthday year, which is 9 years of 2.5%).
-- **Commit Hash:** see git log for "feat: statutory accuracy fixes and golden-vector tests (WO engine_statutory_accuracy)"
+- **Commit Hash:** `d97f2bb` — `feat: statutory accuracy fixes and golden-vector tests (WO engine_statutory_accuracy)`
 - **Notes for Next Agent:**
   - **Deviation:** hand-maintained tables went into a new `statutoryTables.ts`, not `constants.ts`, because `update_ssa_factors.py` rewrites `constants.ts` in full on every refresh. `AGENTS.md` documents the split.
   - **Vintages used:** tax tables for 2027 (Rev. Proc. 2026-35, released 2026-11-05: std. deduction $16,600 / $33,200; additional 65+ deduction $2,100 / $1,700; QCD limit $114,000). The 2026 Trustees Report (2026-06-09): OASI depleted Q4 2032 with 78% payable; OASDI 2034 with 83%. The default haircut is OASI at 78% from **2033** (first full year after depletion), and the UI shows both sets.
