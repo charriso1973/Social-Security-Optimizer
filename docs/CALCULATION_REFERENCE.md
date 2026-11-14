@@ -24,14 +24,16 @@ It is intended for advisors and clients who want to review the calculation basis
 |---|---|---|
 | PIA bend points | Every eligibility year 1979–2027; latest is 2027: $1,340 / $8,077 | https://www.ssa.gov/oact/COLA/bendpoints.html |
 | National Average Wage Index (AWI) | 1951–2025; latest is 2025: $72,800.33 | https://www.ssa.gov/oact/cola/awiseries.html |
+| Cost-of-living adjustments (COLA) | 1975–2026, each effective December of its year; latest is 3.6% (December 2026) | https://www.ssa.gov/oact/cola/colaseries.html |
 | Contribution and benefit base (wage cap) | 1951–2027; latest is 2027: $192,300 | https://www.ssa.gov/oact/cola/cbb.html |
 | Trust fund solvency default | 2026 Trustees Report: retirement and survivors (OASI) fund depleted in 2032 with 78% of scheduled benefits payable; combined OASDI funds in 2034 with 83% | SSA press release, June 9, 2026: https://www.ssa.gov/news/en/press/releases/2026-06-09.html |
 | Federal tax brackets and standard deduction | Tax year 2027 | Rev. Proc. 2026-35; IRS release: https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2027-taxpayers-continue-to-benefit-from-the-working-families-tax-cuts |
-| Additional standard deduction (65+), QCD limit | Tax year 2027: $2,100 unmarried / $1,700 married per person; QCD limit $114,000 per IRA owner | Rev. Proc. 2026-35 |
+| Additional standard deduction (65+) | Tax year 2027: $2,100 unmarried / $1,700 married per person | Rev. Proc. 2026-35, section 3.15(3) |
+| QCD limit | Tax year 2027: $114,000 per IRA owner | IRS Notice 2026-66: https://www.irs.gov/pub/irs-drop/n-26-66.pdf |
 | Senior deduction | $6,000 per person 65+, tax years 2025–2028, reduced by 6% of MAGI over $75,000 ($150,000 joint) | https://www.irs.gov/newsroom/one-big-beautiful-bill-act-tax-deductions-for-working-americans-and-seniors |
 | Uniform Lifetime Table | Ages 72–100 (24.6 at age 75) | IRS Publication 590-B |
 
-The three SSA series were last refreshed on 2026-11-14 with `npm run update-ssa`. That command downloads the SSA tables, checks row counts and known values, and regenerates `constants.ts`. The tax, solvency, retirement-age and RMD tables are maintained by hand in `statutoryTables.ts`, with a source noted next to each table.
+The four SSA series were last refreshed on 2026-11-14 with `npm run update-ssa`. That command downloads the SSA tables, checks row counts and known values, and regenerates `constants.ts`. The tax, solvency, retirement-age and RMD tables are maintained by hand in `statutoryTables.ts`, with a source noted next to each table.
 
 ---
 
@@ -76,11 +78,13 @@ truncated down to the next lower multiple of $0.10
 | `pia-tiers-truncation` | Born 1973, AIME $10,000 (2027 bend points) | 1,206.00 + 2,155.84 + 288.45 = 3,650.29, so PIA = **$3,650.20** |
 | `bp-eligibility-2026` | Born 1964 (eligible 2026: $1,286 / $7,749), AIME $8,000 | PIA = **$3,263.20** |
 | `bp-eligibility-2027` | Born 1965 (eligible 2027), AIME $8,000 | PIA = **$3,337.20** |
-| `earnings-pre1987-indexing` | Born 1960; earnings 1950 $5,000, 1980 $30,000, 2021 $100,000 | 1950 excluded; 1980 capped at $25,900 and indexed to 2020 = $115,138.48; 2021 nominal $100,000; AIME = 512; PIA = **$460.80** (2022 bend points) |
+| `earnings-pre1987-indexing` | Born 1960; earnings 1950 $5,000, 1980 $30,000, 2021 $100,000 | 1950 excluded; 1980 capped at $25,900 and indexed to 2020 = $115,138.48; 2021 nominal $100,000; AIME = 512; PIA = **$460.80** at eligibility (2022 bend points), $544.50 in 2026 dollars (section 3.3) |
 
-### 3.3 Note for clients already past 62
+### 3.3 COLAs for clients already past 62
 
-A PIA computed from earnings is in eligibility-year dollars. COLAs received since age 62 are not added. The tool shows a warning in this case and suggests entering the PIA from the client's SSA statement instead.
+The bend-point formula gives the PIA in eligibility-year dollars. A PIA receives every COLA effective from December of the eligibility year onward, so for a client already past 62, the Manual AIME and Earnings modes apply the published COLAs from the eligibility year through December of last year. Each step is rounded down to the dime, which puts the PIA in current-year dollars. A Manual PIA from the client's SSA statement already includes these COLAs and is used as entered.
+
+Case `cola-since-eligibility-1958`: born 1958 (eligible 2020), PIA $3,000 at eligibility. With the COLAs of December 2020–2025 (1.3%, 5.9%, 8.7%, 3.2%, 2.5%, 2.8%) it becomes $3,039.00, $3,218.30, $3,498.20, $3,610.10, $3,700.30 and **$3,803.90** in 2026 dollars. Case `earnings-pre1987-indexing` above is $460.80 at eligibility (2022) and **$544.50** in 2026 dollars.
 
 ---
 
@@ -388,7 +392,6 @@ A note appears under Claim Age when a partner is already older than the selected
 - **Fixed life expectancies.** Each partner is assumed to live to the entered age. Survival probabilities are not modeled.
 - **Survivor timing.** Survivor benefits start at the later of the year after the first death and the survivor's selected claim age. Strategies that take the survivor benefit first and switch to one's own benefit later (or the reverse) are not searched separately.
 - **Death before claiming.** Delayed credits for a partner who dies before claiming accrue through the year after their entered life expectancy, capped at age 70.
-- **Computed PIA for clients past 62.** COLAs since age 62 are not added to a PIA computed from earnings. Use the SSA statement PIA for these clients.
 - **Benefits not modeled:** earnings test (benefits withheld while working before FRA), marriage-duration requirements (generally 9 months for survivor benefits, 1 year for spousal benefits), divorced-spouse, child and disability benefits, and the family maximum.
 - **Taxes in the grid.** The 81-pair ranking uses benefits before income tax. The tax panel is a separate single-year estimate.
 - **Solvency reduction.** A single percentage applied from a single start year. Possible legislative changes are not modeled.
@@ -409,11 +412,12 @@ A note appears under Claim Age when a partner is already older than the selected
 
 ## 13. Statutory and regulatory references
 
-Citations were checked on 2026-11-14 against SSA's Social Security Act pages, Cornell LII (CFR text), SSA POMS and irs.gov. The 2027 QCD limit and 65+ additional deduction amounts were taken from published summaries of Rev. Proc. 2026-35 and should be confirmed against the Revenue Procedure text.
+Citations were checked on 2026-11-14 against SSA's Social Security Act pages, Cornell LII (CFR text), SSA POMS and irs.gov, including the text of Rev. Proc. 2026-35 and IRS Notice 2026-66.
 
 | Topic | Law | Regulation | SSA / IRS guidance |
 |---|---|---|---|
 | AIME and PIA computation, dime truncation | Social Security Act §215(a)(1)(A), §215(b) | 20 CFR 404.210–404.212 | POMS RS 00605.015 |
+| COLA increases to the PIA | Social Security Act §215(i) | — | SSA COLA series (section 2) |
 | Full retirement age | — | 20 CFR 404.409 | POMS RS 00615.003 |
 | Reduction for early entitlement | Social Security Act §202(q) | 20 CFR 404.410 | — |
 | Delayed retirement credits (2/3 of 1% per month for eligibility after 2004) | Social Security Act §202 | 20 CFR 404.313 | — |
@@ -423,7 +427,8 @@ Citations were checked on 2026-11-14 against SSA's Social Security Act pages, Co
 | Widow(er)'s limit (82.5% of PIA) | Social Security Act §202 | — | POMS RS 00615.320 |
 | Taxation of Social Security benefits | Internal Revenue Code §86 | — | IRS Publication 915 |
 | Required minimum distributions, Uniform Lifetime Table, QCDs | Internal Revenue Code §401(a)(9); SECURE 2.0 Act of 2022 | — | IRS Publication 590-B |
-| 2027 brackets, standard deduction, 65+ additional deduction, QCD limit | — | Rev. Proc. 2026-35 | IRS release (section 2) |
+| 2027 brackets, standard deduction, 65+ additional deduction | — | Rev. Proc. 2026-35 | IRS release (section 2) |
+| 2027 QCD limit | Internal Revenue Code §408(d)(8) | IRS Notice 2026-66 | — |
 | Senior deduction (2025–2028) | One Big Beautiful Bill Act (2025) | — | IRS release (section 2) |
 
 
@@ -439,7 +444,7 @@ The Social Security Optimizer is an illustrative planning model. Its results dep
 
 | When this changes | Update these sections |
 |---|---|
-| `npm run update-ssa` brings in a new bend point, AWI or wage cap year | 2 (vintages), 3.2 (latest bend point year), and the bend point note in section 8 if it changes |
+| `npm run update-ssa` brings in a new bend point, AWI, wage cap or COLA year | 2 (vintages), 3.2 (latest bend point year), 3.3 (COLA example if needed), and the bend point note in section 8 if it changes |
 | A new Trustees Report is published (`statutoryTables.ts`) | 2, 7.3, 10 (defaults) |
 | New IRS inflation adjustments (`statutoryTables.ts`, `TAX_TABLE_YEAR`) | 2, 9.3 (QCD cap), 9.5, and the tax cases in `ss_golden_vectors.json` |
 | Inputs, defaults or presets change in `App.tsx` / `constants.ts` | 8.5, 10 |

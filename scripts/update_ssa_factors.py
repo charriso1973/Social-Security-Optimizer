@@ -23,6 +23,7 @@ import urllib.request
 AWI_URL = "https://www.ssa.gov/oact/cola/awiseries.html"
 BEND_POINTS_URL = "https://www.ssa.gov/oact/COLA/bendpoints.html"
 WAGE_BASE_URL = "https://www.ssa.gov/oact/cola/cbb.html"
+COLA_URL = "https://www.ssa.gov/oact/cola/colaseries.html"
 
 # Earnings before 1951 do not enter the AIME computation, so the engine needs
 # AWI and wage bases from 1951 onward. Both SSA tables start there or earlier.
@@ -141,11 +142,40 @@ def parse_wage_base_html(html: str) -> dict[int, int]:
     return out
 
 
+def parse_cola_html(html: str) -> dict[int, float]:
+    """Parse {year: cola_pct} from colaseries.html (automatic COLAs, 1975 on).
+
+    Each year's COLA is effective for December of that year (payable the
+    following January). Only a year followed by a percentage below 20 is taken;
+    the caller checks known published values before anything is written."""
+    this_year = datetime.date.today().year
+    text = re.sub(r"(?is)<script.*?</script>", " ", html)
+    text = re.sub(r"<[^>]+>", " ", text).replace("&nbsp;", " ").replace("\xa0", " ").replace("%", " ")
+    toks = text.split()
+    out = {}
+    for i, tok in enumerate(toks[:-1]):
+        # A year may carry a footnote mark (e.g. the corrected 1999 COLA).
+        m = re.fullmatch(r"((?:19|20)\d{2})[^\d\s]{0,2}", tok)
+        if m:
+            y = int(m.group(1))
+            nxt = re.sub(r"[^\d.]+$", "", toks[i + 1])
+            # ...or a separate footnote token between the year and the value.
+            if not re.fullmatch(r"\d{1,2}\.\d", nxt) and i + 2 < len(toks) \
+                    and re.fullmatch(r"\(?[a-z\d*]\)?", toks[i + 1]):
+                nxt = re.sub(r"[^\d.]+$", "", toks[i + 2])
+            if 1975 <= y <= this_year and re.fullmatch(r"\d{1,2}\.\d", nxt):
+                val = float(nxt)
+                if val < 20 and y not in out:
+                    out[y] = val
+    return out
+
+
 def update_constants_file(
     repo_dir: str,
     awi_series: dict[int, float],
     bend_points: dict[int, tuple[float, float]],
     wage_caps: dict[int, int],
+    colas: dict[int, float],
 ):
     latest_bp_year = max(bend_points.keys())
     bp1, bp2 = bend_points[latest_bp_year]
@@ -188,6 +218,15 @@ def update_constants_file(
         bp_lines.append("  " + ", ".join(f"{y}: [{int(a)}, {int(b)}]" for y, (a, b) in chunk))
     formatted_bps = ",\n".join(bp_lines)
 
+    # Format COLA_SERIES (percent, effective December of each year)
+    cola_items = sorted(colas.items())
+    cola_lines = []
+    for k in range(0, len(cola_items), 6):
+        chunk = cola_items[k : k + 6]
+        cola_lines.append("  " + ", ".join(f"{y}: {v:.1f}" for y, v in chunk))
+    formatted_colas = ",\n".join(cola_lines)
+    latest_cola_year = max(colas)
+
     content = f"""import {{ EarningsRecord }} from './types';
 
 // ==============================================================================
@@ -197,6 +236,7 @@ def update_constants_file(
 // - AWI Series: {AWI_URL}
 // - PIA Bend Points: {BEND_POINTS_URL}
 // - Contribution Base: {WAGE_BASE_URL}
+// - COLA Series: {COLA_URL}
 // ==============================================================================
 
 // Latest published SSA PIA Formula Bend Points (Eligibility Year {latest_bp_year}).
@@ -244,6 +284,13 @@ export const TAX_MAX_SERIES: Record<number, number> = {{
 export const DATA_AWI_SERIES: EarningsRecord[] = [
 {formatted_awi}
 ];
+
+// Automatic cost-of-living adjustments, percent, effective DECEMBER of each year
+// (latest: {latest_cola_year} = {colas[latest_cola_year]:.1f}%). A PIA receives every COLA from
+// December of the eligibility year (age 62) onward.
+export const COLA_SERIES: Record<number, number> = {{
+{formatted_colas}
+}};
 
 // Helper for default placeholder CSV - High Earner
 export const DEFAULT_EARNINGS_CSV = `2024, 150000
@@ -309,6 +356,7 @@ export const DEFAULT_EARNINGS_CSV_B = `2024, 75000
         "all_bend_points": bend_points,
         "all_wage_bases": wage_caps,
         "all_awi_series": awi_series,
+        "all_colas": colas,
     }
     public_dir = os.path.join(repo_dir, "public")
     os.makedirs(public_dir, exist_ok=True)
@@ -326,6 +374,8 @@ export const DEFAULT_EARNINGS_CSV_B = `2024, 75000
         "awi_rows": len(awi_series),
         "bp_rows": len(bend_points),
         "cap_rows": len(wage_caps),
+        "latest_cola_year": latest_cola_year,
+        "latest_cola": colas[latest_cola_year],
     }
 
 
@@ -366,13 +416,28 @@ def main():
     latest_cap = max(wage_caps.keys())
     print(f"-> Parsed {len(wage_caps)} Wage Base years (Latest: {latest_cap} = ${wage_caps[latest_cap]:,})")
 
-    # 4. Update constants.ts and public/statutory_factors.json
-    summary = update_constants_file(repo_dir, awi_series, bend_points, wage_caps)
+    # 4. Fetch & Parse COLA series
+    print(f"Fetching COLA series from {COLA_URL}...")
+    html_cola = fetch_text(COLA_URL)
+    colas = parse_cola_html(html_cola)
+    cola_gaps = sorted(set(range(1975, max(colas, default=1975) + 1)) - set(colas))
+    if len(colas) < 45 or cola_gaps:
+        flat = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html_cola))
+        ctx = [flat[max(0, m.start() - 60): m.start() + 80]
+               for g in cola_gaps[:3] for m in [re.search(str(g), flat)] if m]
+        raise ValueError(f"COLA parse failed: {len(colas)} rows, gaps {cola_gaps}; context: {ctx}")
+    if (colas.get(1975), colas.get(2009), colas.get(2022)) != (8.0, 0.0, 8.7):
+        raise ValueError("COLA sanity check failed (expected 1975 = 8.0, 2009 = 0.0, 2022 = 8.7)")
+    print(f"-> Parsed {len(colas)} COLA years (Latest: {max(colas)} = {colas[max(colas)]}%)")
+
+    # 5. Update constants.ts and public/statutory_factors.json
+    summary = update_constants_file(repo_dir, awi_series, bend_points, wage_caps, colas)
     print("\nSUCCESS: Updated constants.ts and public/statutory_factors.json")
     print(f"  * Statutory Year: {summary['latest_bp_year']}")
     print(f"  * PIA Bend Points: ${summary['bp1']} / ${summary['bp2']}")
     print(f"  * Wage Base Cap: ${summary['latest_cap']:,} (Year {summary['latest_cap_year']})")
     print(f"  * Latest AWI: ${summary['latest_awi']:,.2f} (Year {summary['latest_awi_year']})")
+    print(f"  * Latest COLA: {summary['latest_cola']}% (effective December {summary['latest_cola_year']})")
     print("=" * 70)
 
 

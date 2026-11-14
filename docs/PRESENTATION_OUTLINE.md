@@ -23,7 +23,7 @@ Audience: financial advisors and their clients reviewing how the tool calculates
 - **Key message:** Statutory figures come from published SSA and IRS tables, each with a stated year.
 - **Bullets:**
   - SSA bend points through 2027; wage index through 2025
-  - SSA wage caps 1951–2027
+  - SSA wage caps 1951–2027; COLAs 1975–2026
   - 2026 Trustees Report for the optional solvency reduction
   - IRS 2027 tax tables (Rev. Proc. 2026-35)
 - **Visual suggestion:** Simple table of data source, latest year, and link.
@@ -37,9 +37,9 @@ Audience: financial advisors and their clients reviewing how the tool calculates
   - Enter PIA, AIME, or year-by-year earnings
   - Earnings indexed to age-60 wage level, top 35 years
   - 90% / 32% / 15% formula, eligibility-year bend points
-  - SSA statement PIA preferred for clients past 62
+  - COLAs since 62 added for clients past 62
 - **Visual suggestion:** Three-tier bar showing the 90/32/15 bend-point formula.
-- **Speaker notes:** Example: an AIME of $10,000 with 2027 bend points gives a PIA of $3,650.20. For clients already past 62, a computed PIA doesn't include COLAs received since 62, so the statement figure is the better input.
+- **Speaker notes:** Example: an AIME of $10,000 with 2027 bend points gives a PIA of $3,650.20. For clients already past 62, the tool adds the published COLAs since their eligibility year, so the PIA is in today's dollars; a PIA from the client's SSA statement already includes them.
 - **Source:** §3
 
 ## Slide 4 — Claiming early or late

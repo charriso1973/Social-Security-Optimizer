@@ -105,11 +105,12 @@ export const BRACKETS_MARRIED: TaxBracket[] = [
 
 export const STD_DED_SINGLE = 16600;
 export const STD_DED_MARRIED = 33200;
-// Additional standard deduction per person age 65+ (IRC 63(f)).
+// Additional standard deduction per person age 65+ (IRC 63(f)); Rev. Proc. 2026-35 sec. 3.15(3).
 export const ADDL_STD_DED_65_SINGLE = 2100;
 export const ADDL_STD_DED_65_MARRIED = 1700;
 
-// Qualified charitable distribution annual limit per IRA owner (IRC 408(d)(8)(G)).
+// Qualified charitable distribution annual limit per IRA owner (IRC 408(d)(8)),
+// 2027: IRS Notice 2026-66, https://www.irs.gov/pub/irs-drop/n-26-66.pdf
 export const QCD_LIMIT = 114000;
 
 // Senior deduction (IRC 151(d)(5)(C), added by P.L. 119-21): $6,000 per person

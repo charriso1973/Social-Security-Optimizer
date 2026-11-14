@@ -2,11 +2,12 @@ import { EarningsRecord } from './types';
 
 // ==============================================================================
 // SSA Statutory Actuarial Constants
-// Auto-refreshed from SSA.gov on: 2026-11-14 12:33:33
+// Auto-refreshed from SSA.gov on: 2026-11-14 15:00:08
 // Sources:
 // - AWI Series: https://www.ssa.gov/oact/cola/awiseries.html
 // - PIA Bend Points: https://www.ssa.gov/oact/COLA/bendpoints.html
 // - Contribution Base: https://www.ssa.gov/oact/cola/cbb.html
+// - COLA Series: https://www.ssa.gov/oact/cola/colaseries.html
 // ==============================================================================
 
 // Latest published SSA PIA Formula Bend Points (Eligibility Year 2027).
@@ -105,6 +106,21 @@ export const DATA_AWI_SERIES: EarningsRecord[] = [
   { "year": 2020, "amount": 55628.60 }, { "year": 2021, "amount": 60575.07 }, { "year": 2022, "amount": 63795.13 },
   { "year": 2023, "amount": 66621.80 }, { "year": 2024, "amount": 69846.57 }, { "year": 2025, "amount": 72800.33 }
 ];
+
+// Automatic cost-of-living adjustments, percent, effective DECEMBER of each year
+// (latest: 2026 = 3.6%). A PIA receives every COLA from
+// December of the eligibility year (age 62) onward.
+export const COLA_SERIES: Record<number, number> = {
+  1975: 8.0, 1976: 6.4, 1977: 5.9, 1978: 6.5, 1979: 9.9, 1980: 14.3,
+  1981: 11.2, 1982: 7.4, 1983: 3.5, 1984: 3.5, 1985: 3.1, 1986: 1.3,
+  1987: 4.2, 1988: 4.0, 1989: 4.7, 1990: 5.4, 1991: 3.7, 1992: 3.0,
+  1993: 2.6, 1994: 2.8, 1995: 2.6, 1996: 2.9, 1997: 2.1, 1998: 1.3,
+  1999: 2.5, 2000: 3.5, 2001: 2.6, 2002: 1.4, 2003: 2.1, 2004: 2.7,
+  2005: 4.1, 2006: 3.3, 2007: 2.3, 2008: 5.8, 2009: 0.0, 2010: 0.0,
+  2011: 3.6, 2012: 1.7, 2013: 1.5, 2014: 1.7, 2015: 0.0, 2016: 0.3,
+  2017: 2.0, 2018: 2.8, 2019: 1.6, 2020: 1.3, 2021: 5.9, 2022: 8.7,
+  2023: 3.2, 2024: 2.5, 2025: 2.8, 2026: 3.6
+};
 
 // Helper for default placeholder CSV - High Earner
 export const DEFAULT_EARNINGS_CSV = `2024, 150000

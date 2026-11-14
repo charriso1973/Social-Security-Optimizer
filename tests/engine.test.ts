@@ -49,9 +49,13 @@ const handlers: Record<string, (input: any, expected: any) => void> = {
     const earnings = input.earnings.map(([year, amount]: [number, number]) => ({ year, amount }));
     const r = engine.calculatePIA(input.birth_year, earnings, input.current_year);
     expect(r.aime).toBe(expected.aime);
+    expect(r.piaAtEligibility).toBe(expected.pia_at_eligibility);
     expect(r.pia).toBe(expected.pia);
     expect(r.bendPointYear).toBe(expected.bend_point_year);
     expect(r.indexingYear).toBe(expected.indexing_year);
+  },
+  pia_with_colas: (input, expected) => {
+    expect(eng.piaWithColas(input.pia, input.birth_year, input.current_year)).toBe(expected.pia);
   },
   household: (input, expected) => {
     const sim = runHousehold(input);

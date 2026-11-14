@@ -15,7 +15,7 @@ import {
   DEFAULT_SOLVENCY, TRUSTEES_REPORT_YEAR, SOLVENCY_OASDI, TAX_TABLE_YEAR,
   rmdStartAge, UNIFORM_LIFETIME_TABLE, QCD_LIMIT, QCD_MIN_AGE
 } from './statutoryTables';
-import { parseEarningsCSV, calculatePIA, simulateHousehold, calculateStrategyGrid, piaFromAimeForBirthYear, estimateAIMEFromPIA, calculateTaxSnapshot, CURRENT_YEAR, SimulationOptions } from './services/engine';
+import { parseEarningsCSV, calculatePIA, simulateHousehold, calculateStrategyGrid, piaFromAimeForBirthYear, piaWithColas, estimateAIMEFromPIA, calculateTaxSnapshot, CURRENT_YEAR, SimulationOptions } from './services/engine';
 import { StrategyHeatmap } from './StrategyHeatmap';
 
 // Formatting Helpers
@@ -182,7 +182,8 @@ const App: React.FC = () => {
       aime = estimateAIMEFromPIA(manualPiaA, birthYearA);
     } else if (piaMethodA === 'aime') {
       aime = manualAimeA;
-      pia = piaFromAimeForBirthYear(manualAimeA, birthYearA);
+      // AIME mode: eligibility-year PIA, plus COLAs since 62 for anyone already past it.
+      pia = piaWithColas(piaFromAimeForBirthYear(manualAimeA, birthYearA), birthYearA);
     } else {
       const result = calculatePIA(birthYearA, parsed);
       pia = result.pia;
@@ -208,7 +209,8 @@ const App: React.FC = () => {
       aime = estimateAIMEFromPIA(manualPiaB, birthYearB);
     } else if (piaMethodB === 'aime') {
       aime = manualAimeB;
-      pia = piaFromAimeForBirthYear(manualAimeB, birthYearB);
+      // AIME mode: eligibility-year PIA, plus COLAs since 62 for anyone already past it.
+      pia = piaWithColas(piaFromAimeForBirthYear(manualAimeB, birthYearB), birthYearB);
     } else {
       const result = calculatePIA(birthYearB, parsed);
       pia = result.pia;

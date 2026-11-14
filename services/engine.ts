@@ -1,4 +1,4 @@
-import { BEND_POINTS_SERIES, DATA_AWI_SERIES, STATUTORY_BEND_POINT_YEAR, TAX_MAX_SERIES } from '../constants';
+import { BEND_POINTS_SERIES, COLA_SERIES, DATA_AWI_SERIES, STATUTORY_BEND_POINT_YEAR, TAX_MAX_SERIES } from '../constants';
 import {
   fraMonths, survivorFraMonths, SURVIVOR_MAX_REDUCTION, SURVIVOR_MIN_AGE, RIB_LIM_FLOOR,
   DRC_MONTHLY_RATE, DRC_MAX_AGE, BRACKETS_SINGLE, BRACKETS_MARRIED, STD_DED_SINGLE, STD_DED_MARRIED,
@@ -80,8 +80,23 @@ export const estimateAIMEFromPIA = (pia: number, birthYear: number): number => {
   }
 };
 
+// A PIA receives every COLA effective from December of the eligibility year
+// (age 62) onward, each step rounded down to the dime (SSA Act 215(i)). For
+// "today's dollars" in basisYear that is the COLAs of years E .. basisYear-1.
+// A year missing from the published series stops the chain.
+export const piaWithColas = (piaAtEligibility: number, birthYear: number, basisYear: number = CURRENT_YEAR): number => {
+  let pia = piaAtEligibility;
+  for (let y = birthYear + 62; y < basisYear; y++) {
+    const cola = COLA_SERIES[y];
+    if (cola === undefined) break;
+    pia = Math.floor(Math.round(pia * (1 + cola / 100) * 1000) / 100) / 10;
+  }
+  return pia;
+};
+
 export interface PIAResult {
-  pia: number;
+  pia: number;                 // in basis-year (today's) dollars, COLAs since 62 applied
+  piaAtEligibility: number;    // from the bend-point formula, eligibility-year dollars
   aime: number;
   bendPointYear: number;
   indexingYear: number;
@@ -131,8 +146,9 @@ export const calculatePIA = (birthYear: number, earnings: EarningsRecord[], curr
   if (preCoverage.length) warnings.push(`Earnings before ${firstCapYear} are not used (${preCoverage.join(', ')}).`);
   if (pastCap.length) warnings.push(`No published wage cap for ${pastCap.join(', ')}; used the ${latestCapYear} cap or excluded far-future years.`);
   if (noAWI.length) warnings.push(`No AWI for ${noAWI.join(', ')}; those years were not indexed.`);
-  if (birthYear + 62 < currentYear) {
-    warnings.push(`Computed PIA is in ${birthYear + 62} dollars; COLAs since age 62 are not applied. For clients already past 62, enter the PIA from their SSA statement.`);
+  const latestColaYear = Math.max(...Object.keys(COLA_SERIES).map(Number));
+  if (latestColaYear < currentYear - 1 && birthYear + 62 < currentYear) {
+    warnings.push(`COLAs after ${latestColaYear} are not yet in the published series; the PIA includes COLAs through ${latestColaYear} only.`);
   }
 
   // 3. Top 35 Years
@@ -145,10 +161,11 @@ export const calculatePIA = (birthYear: number, earnings: EarningsRecord[], curr
   // 4. Calculate AIME
   const aime = Math.floor(totalLifetimeIndexedEarnings / 420); // 35 years * 12 months
 
-  // 5. Calculate PIA using shared logic
-  const pia = calculatePIAFromAIME(aime, [bp1, bp2]);
+  // 5. Calculate PIA using shared logic, then COLAs since eligibility
+  const piaAtEligibility = calculatePIAFromAIME(aime, [bp1, bp2]);
+  const pia = piaWithColas(piaAtEligibility, birthYear, currentYear);
 
-  return { pia, aime, bendPointYear, indexingYear, warnings };
+  return { pia, piaAtEligibility, aime, bendPointYear, indexingYear, warnings };
 };
 
 // --- Benefit Adjustment ---
