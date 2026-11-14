@@ -613,7 +613,7 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calculator className="h-6 w-6 text-indigo-600" />
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">Social Security Optimizer <span className="text-slate-400 font-light">v3.1</span></h1>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">Social Security Optimizer <span className="text-slate-400 font-light" title={`Version ${__APP_VERSION__}`}>v{__APP_VERSION__.split('.').slice(0, 2).join('.')}</span></h1>
           </div>
           <div className="flex items-center gap-3">
              <div 

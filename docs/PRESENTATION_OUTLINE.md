@@ -1,5 +1,7 @@
 # Social Security Optimizer — Presentation Outline
 
+*Applies to version 3.1 (3.1.0), November 2026. Drawn from `CALCULATION_REFERENCE.md` for the same version.*
+
 > **For the design agent:** this outline is the content source for a short slide presentation. Keep the language descriptive. Do not add claims, statistics or regulatory statements that aren't in the bullets or speaker notes. Every slide cites a section of `CALCULATION_REFERENCE.md`; check facts there. The limitations slide (slide 11) must be kept. Suggested visuals are optional; screenshots should use the app's default inputs unless the slide says otherwise.
 
 Audience: financial advisors and their clients reviewing how the tool calculates results.

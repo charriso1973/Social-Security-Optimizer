@@ -34,6 +34,16 @@ A client-side Social Security claiming model for financial advisors and individu
 - [`docs/CALCULATION_REFERENCE.md`](./docs/CALCULATION_REFERENCE.md): How the tool calculates its results: formulas, data sources and vintages, worked examples, inputs, model limitations, and statutory references.
 - [`docs/PRESENTATION_OUTLINE.md`](./docs/PRESENTATION_OUTLINE.md): Slide-by-slide outline drawn from the calculation reference, for building a short presentation.
 
+## Versioning
+
+The app version lives in one place: `"version"` in `package.json` (currently **3.1.0**). The build injects it, and the header shows major.minor ("v3.1"). To release a new version:
+
+```bash
+npm version <new-version> --no-git-tag-version   # updates package.json and package-lock.json
+```
+
+Then update the version line at the top of both files in `docs/`, commit, and tag the commit `v<new-version>`.
+
 ## Getting Started
 
 ### Prerequisites

@@ -1,5 +1,7 @@
 # Social Security Optimizer — Calculation Reference
 
+*Applies to version 3.1 (3.1.0), November 2026.*
+
 This document describes how the Social Security Optimizer calculates its results: the formulas, the published data they use, and the simplifications the model makes. It is not an official SSA or IRS determination, and it is not financial, tax or legal advice.
 
 Numbered sections are referenced by the companion slide outline (`PRESENTATION_OUTLINE.md`). Worked examples cite a test case id from `tests/fixtures/ss_golden_vectors.json`. Each of those cases has a hand-derived expected value that the automated tests check against the code.

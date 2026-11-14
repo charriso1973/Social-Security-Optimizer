@@ -18,6 +18,7 @@ This codebase is generic (Partner A / Partner B) and intended for financial advi
     - **Break-Even vs. 62**: Plots net lifetime difference against claiming at 62; crossover above $0 reveals the break-even age.
     - **Cumulative Portfolio**: Plots total portfolio growth under reinvestment.
   - Tax Snapshot / RMD Planning Widget (snapshot in the year the older partner turns 75: RMDs, QCDs, provisional income, taxable SS, deductions, 2027 tax tables).
+- **Versioning**: `package.json` `"version"` is the single source (injected as `__APP_VERSION__` via `vite.config.ts`; header shows major.minor). Bump with `npm version <x.y.z> --no-git-tag-version`, update the version line atop both `docs/` files, and tag the commit `v<x.y.z>`.
 - **Documentation**: `docs/CALCULATION_REFERENCE.md` (complete calculation basis) and `docs/PRESENTATION_OUTLINE.md` (slide content drawn only from the reference). Use descriptive language only (no "guarantee", "exact", "compliant", etc.); the reference's last section lists which sections to update when constants or tax tables change.
 
 ## Multi-Agent & Engineering Standards
