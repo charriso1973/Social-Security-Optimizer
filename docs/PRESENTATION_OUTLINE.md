@@ -87,7 +87,7 @@ Audience: financial advisors and their clients reviewing how the tool calculates
   - Optional solvency reduction from a start year
   - Value = benefits received plus investment growth
 - **Visual suggestion:** Simple timeline: age 62 → claims → first death → second death.
-- **Speaker notes:** The optional solvency setting defaults to the 2026 Trustees Report projection for the retirement fund: 78% of benefits payable from 2033. It applies only from the start year onward.
+- **Speaker notes:** The optional solvency setting defaults to the 2026 Trustees Report projection for the retirement fund: a 22% benefit cut (78% payable) from 2033. The panel shows that projection at all times and applies the cut only from the start year onward.
 - **Source:** §7
 
 ## Slide 8 — Reading the 81-pair grid

@@ -214,9 +214,11 @@ nominal return = (1 + real return) x (1 + inflation) - 1
 
 ### 7.3 Solvency reduction (optional)
 
-When **Apply Solvency Haircut?** is on, benefits from the entered start year onward are multiplied by the entered payable percentage. Years before the start year are unchanged. The defaults (78% from 2033) come from the 2026 Trustees Report's projection for the retirement and survivors (OASI) fund: depletion in 2032, and 2033 is the first full calendar year after it. The panel also shows the combined-fund (OASDI) projection, 2034 with 83%, for reference.
+When **Apply Solvency Haircut?** is on, benefits from the **Reduction starts in** year onward are reduced by the **Benefit Cut** percentage (benefit x (1 − cut)). Years before the start year are unchanged.
 
-Case `solvency-start-year`: a $1,000 PIA claimed at 62 pays $700/month in 2027–2033 and $560/month (80%) from 2034 when the start year is 2034 and the payable percentage is 80%.
+The defaults are the 2026 Trustees Report's projection for the retirement and survivors (OASI) fund: a **22% benefit cut** (78% of scheduled benefits payable) **from 2033**. The fund is projected to be depleted in 2032, and 2033 is the first full calendar year after that. The panel shows this projection under the toggle at all times. It says "Matches the 2026 Trustees Report projection" when the inputs equal it, and offers a one-click reset when they don't. For reference, it also shows the combined OASDI projection (2034, 83% payable, a 17% cut). The chart banner states the haircut in effect, or that none is applied.
+
+Case `solvency-start-year`: a $1,000 PIA claimed at 62 pays $700/month in 2027–2033 and $560/month from 2034 when the start year is 2034 and the cut is 20% (80% payable).
 
 ### 7.4 Reinvestment
 
@@ -349,7 +351,7 @@ tax            = 2027 brackets (10% to 37%) applied to taxable income
 | General Inflation Rate (=SS COLA) | 0%–10% (0.1% steps) | 2.5% | Benefit growth and nominal return; disabled in Today's mode |
 | Real Investment Return | −10% to +20% (0.5% steps) | 5.0% | Reinvestment of benefits; balance projection in the tax panel |
 | Apply Solvency Haircut? | on / off | off | Section 7.3 |
-| Benefits Payable | 50%–100% | 78% | Payable share from the start year |
+| Benefit Cut | 0%–50% (shows the payable share alongside) | 22% (78% payable) | Benefit reduction from the start year |
 | Reduction starts in | current year–2100 | 2033 | First year the reduction applies |
 
 ### Partner profiles (each partner)

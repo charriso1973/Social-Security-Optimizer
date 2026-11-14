@@ -12,7 +12,7 @@ import {
   STATUTORY_BEND_POINT_YEAR, BEND_POINT_1, BEND_POINT_2, DATA_AWI_SERIES, TAX_MAX_SERIES
 } from './constants';
 import {
-  DEFAULT_SOLVENCY, TRUSTEES_REPORT_YEAR, SOLVENCY_OASI, SOLVENCY_OASDI, TAX_TABLE_YEAR,
+  DEFAULT_SOLVENCY, TRUSTEES_REPORT_YEAR, SOLVENCY_OASDI, TAX_TABLE_YEAR,
   rmdStartAge, UNIFORM_LIFETIME_TABLE, QCD_LIMIT, QCD_MIN_AGE
 } from './statutoryTables';
 import { parseEarningsCSV, calculatePIA, simulateHousehold, calculateStrategyGrid, piaFromAimeForBirthYear, estimateAIMEFromPIA, calculateTaxSnapshot, CURRENT_YEAR, SimulationOptions } from './services/engine';
@@ -766,18 +766,22 @@ const App: React.FC = () => {
                           <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:bg-slate-900 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                        </label>
                     </div>
-                    
+                    <p className="pl-6 text-[11px] text-slate-500 leading-snug mb-2">
+                      {TRUSTEES_REPORT_YEAR} Trustees Report projection: <strong className="text-slate-700">{100 - DEFAULT_SOLVENCY.payablePct}% benefit cut from {DEFAULT_SOLVENCY.startYear}</strong> (retirement and survivors fund depleted in {DEFAULT_SOLVENCY.depletionYear}; {DEFAULT_SOLVENCY.payablePct}% of benefits payable).
+                    </p>
+
                     {applyHaircut && (
                       <div className="mb-2 pl-6 animate-in fade-in slide-in-from-top-1">
                         <label className="block text-xs font-medium text-slate-500 uppercase mb-1">
-                          Benefits Payable: <span className="text-slate-900 font-bold ml-1">{haircutPct}%</span>
+                          Benefit Cut: <span className="text-slate-900 font-bold ml-1">{100 - haircutPct}%</span>
+                          <span className="normal-case text-slate-400 ml-1">({haircutPct}% payable)</span>
                         </label>
                         <input 
-                           type="range" min="50" max="100" step="1" 
-                           value={haircutPct} onChange={e => setHaircutPct(Number(e.target.value))} 
+                           type="range" min="0" max="50" step="1" 
+                           value={100 - haircutPct} onChange={e => setHaircutPct(100 - Number(e.target.value))} 
                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-900" 
                         />
-                         <div className="flex justify-between text-xs text-slate-400 mt-1"><span>50%</span><span>75%</span><span>100%</span></div>
+                         <div className="flex justify-between text-xs text-slate-400 mt-1"><span>0%</span><span>25%</span><span>50%</span></div>
                          <div className="flex items-center justify-between mt-3">
                            <label className="text-xs font-medium text-slate-500 uppercase">Reduction starts in</label>
                            <input
@@ -787,8 +791,19 @@ const App: React.FC = () => {
                              className="w-20 text-right text-sm border-b border-slate-300 focus:border-slate-900 outline-none bg-transparent font-bold text-slate-700"
                            />
                          </div>
-                         <p className="text-[10px] text-slate-400 mt-2 leading-tight">
-                           {TRUSTEES_REPORT_YEAR} Trustees Report: retirement (OASI) fund depleted in {SOLVENCY_OASI.depletionYear}, {SOLVENCY_OASI.payablePct}% payable; combined OASDI in {SOLVENCY_OASDI.depletionYear}, {SOLVENCY_OASDI.payablePct}%. Applied from the start year onward.
+                         {haircutPct === DEFAULT_SOLVENCY.payablePct && haircutStartYear === DEFAULT_SOLVENCY.startYear ? (
+                           <p className="text-[10px] text-emerald-700 mt-2 leading-tight">Matches the {TRUSTEES_REPORT_YEAR} Trustees Report projection.</p>
+                         ) : (
+                           <p className="text-[10px] text-amber-700 mt-2 leading-tight">
+                             Custom values.{' '}
+                             <button type="button" className="underline hover:text-amber-900"
+                               onClick={() => { setHaircutPct(DEFAULT_SOLVENCY.payablePct); setHaircutStartYear(DEFAULT_SOLVENCY.startYear); }}>
+                               Reset to {TRUSTEES_REPORT_YEAR} Trustees projection ({100 - DEFAULT_SOLVENCY.payablePct}% from {DEFAULT_SOLVENCY.startYear})
+                             </button>
+                           </p>
+                         )}
+                         <p className="text-[10px] text-slate-400 mt-1 leading-tight">
+                           Applied from the start year onward. For reference, the combined OASDI funds are projected to last until {SOLVENCY_OASDI.depletionYear}, with {SOLVENCY_OASDI.payablePct}% payable ({100 - SOLVENCY_OASDI.payablePct}% cut).
                          </p>
                       </div>
                     )}
@@ -1157,7 +1172,7 @@ const App: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 text-[10px] text-amber-700 bg-amber-50 px-3 py-1.5 rounded-md mb-4 border border-amber-100">
                   <Info className="w-3 h-3 flex-shrink-0" />
-                  <span>SSA data: bend points through {STATUTORY_BEND_POINT_YEAR}, wage index through {DATA_AWI_SERIES[DATA_AWI_SERIES.length - 1].year}, wage cap through {Math.max(...Object.keys(TAX_MAX_SERIES).map(Number))}. Benefits in {useRealDollars ? `${CURRENT_YEAR} dollars` : `future dollars (COLA from ${CURRENT_YEAR})`}. Projections assume current law.</span>
+                  <span>SSA data: bend points through {STATUTORY_BEND_POINT_YEAR}, wage index through {DATA_AWI_SERIES[DATA_AWI_SERIES.length - 1].year}, wage cap through {Math.max(...Object.keys(TAX_MAX_SERIES).map(Number))}. Benefits in {useRealDollars ? `${CURRENT_YEAR} dollars` : `future dollars (COLA from ${CURRENT_YEAR})`}.{applyHaircut ? ` Solvency haircut: ${100 - haircutPct}% benefit cut from ${haircutStartYear}.` : ' No solvency haircut applied.'} Projections assume current law.</span>
               </div>
               <div className="w-full h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">

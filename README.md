@@ -15,7 +15,7 @@ A client-side Social Security claiming model for financial advisors and individu
   - **Cumulative Portfolio**: Shows reinvested benefits over the full timeline.
 - **What-If Controls**:
   - Inflation/COLA, real investment return, and life expectancies.
-  - Optional solvency reduction with a payable percentage and start year (defaults from the 2026 Trustees Report).
+  - Optional solvency haircut: benefit cut and start year, defaulting to the 2026 Trustees Report projection (22% cut from 2033), which is always shown in the panel.
   - Future-dollar or today's-dollar basis.
   - PIA entry by manual PIA, AIME, or year-by-year earnings.
 - **Federal Tax & RMD Snapshot**: One-year estimate in the year the older partner turns 75, using 2027 federal tables, comparing joint filing with two Single returns.
