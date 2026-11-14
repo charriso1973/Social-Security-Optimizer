@@ -1,25 +1,24 @@
 # Social Security Optimizer
 
-A high-precision, client-side Social Security strategy optimizer designed for financial advisors and individuals to simulate, compare, and optimize household claiming strategies.
+A client-side Social Security claiming model for financial advisors and individuals. It compares household claiming strategies under the entered assumptions.
 
 ## Key Capabilities
 
-- **Household Claiming Optimization**: Evaluates all 81 combinations of claim ages (ages 62 to 70 for both partners) to identify the lifetime wealth-maximizing claiming pair.
-- **Accurate Actuarial Math**:
-  - Full AIME (Average Indexed Monthly Earnings) and 35-year top-earnings calculation.
-  - SSA bend-point formulas (90% / 32% / 15% truncated to the dime).
-  - Early claiming reduction factors and delayed retirement credits (8%/year up to age 70).
-  - Spousal top-up (up to 50% of spouse's PIA) and survivor step-up logic.
+- **Household Claiming Comparison**: Evaluates all 81 combinations of claim ages (62 to 70 for both partners) and ranks them by reinvested lifetime value.
+- **Statutory Benefit Rules**:
+  - AIME from up to 35 years of indexed earnings (1951 onward) and the 90% / 32% / 15% bend-point formula, using the bend points of each worker's eligibility year.
+  - Full retirement age by birth year; early reductions and delayed retirement credits (8%/year up to age 70).
+  - Spousal benefits under deemed filing, starting when both partners have filed.
+  - Survivor benefits with the survivor age reduction and the 82.5% widow(er)'s limit.
 - **Dual-View Strategy Chart**:
-  - **Break-Even Analysis ("When Delay Pays Off")**: Plots net lifetime difference against claiming both at age 62. The exact age where the curve crosses above $0 identifies the break-even age.
-  - **Cumulative Growth**: Models total reinvested benefits over the full retirement timeline.
-- **Full What-If Controls**:
-  - Dynamic adjustments for COLA / Inflation, Real Investment Return, and Life Expectancies.
-  - Solvency haircut toggle (models potential trust-fund reduction scenarios).
-  - Nominal ("Future Dollars") vs. Real ("Today's Dollars") purchasing power basis.
-  - Flexible PIA entry: exact manual PIA override, AIME entry, or full 35-year career CSV earnings paste.
-- **Federal Tax & RMD Snapshot**:
-  - Explores provisional income thresholds and Social Security taxation tiers alongside age 75 RMDs.
+  - **Break-Even vs. 62**: Plots each strategy's cumulative value minus claiming both at 62; the $0 crossing marks the catch-up age (including investment growth).
+  - **Cumulative Portfolio**: Shows reinvested benefits over the full timeline.
+- **What-If Controls**:
+  - Inflation/COLA, real investment return, and life expectancies.
+  - Optional solvency reduction with a payable percentage and start year (defaults from the 2026 Trustees Report).
+  - Future-dollar or today's-dollar basis.
+  - PIA entry by manual PIA, AIME, or year-by-year earnings.
+- **Federal Tax & RMD Snapshot**: One-year estimate in the year the older partner turns 75, using 2027 federal tables, comparing joint filing with two Single returns.
 
 ## Tech Stack
 
@@ -30,11 +29,10 @@ A high-precision, client-side Social Security strategy optimizer designed for fi
 - **Recharts**
 - **Lucide Icons**
 
-## Compliance & Fiduciary Documentation
+## Documentation
 
-For compliance officers, financial advisors, and auditors, detailed technical calculation specifications, statutory authority citations (SSA, CFR, POMS, IRC), and presentation slide summaries are located in:
-- [`docs/social_security_compliance_and_calculation_guide.md`](./docs/social_security_compliance_and_calculation_guide.md): Executive presentation slide-deck & architectural reference.
-- [`docs/COMPLIANCE_AND_CALCULATION_REFERENCE.md`](./docs/COMPLIANCE_AND_CALCULATION_REFERENCE.md): Line-by-line statutory calculation manual and formula specification.
+- [`docs/CALCULATION_REFERENCE.md`](./docs/CALCULATION_REFERENCE.md): How the tool calculates its results: formulas, data sources and vintages, worked examples, inputs, model limitations, and statutory references.
+- [`docs/PRESENTATION_OUTLINE.md`](./docs/PRESENTATION_OUTLINE.md): Slide-by-slide outline drawn from the calculation reference, for building a short presentation.
 
 ## Getting Started
 
@@ -53,6 +51,22 @@ npm install
 ```bash
 npm run dev
 ```
+
+### Tests
+
+```bash
+npm test
+```
+
+Runs the golden-vector tests in `tests/engine.test.ts` against `tests/fixtures/ss_golden_vectors.json`.
+
+### Refresh SSA Data
+
+```bash
+npm run update-ssa
+```
+
+Downloads the SSA bend point, wage index and wage cap tables and regenerates `constants.ts`.
 
 ### Production Build
 

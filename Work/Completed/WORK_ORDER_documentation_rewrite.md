@@ -1,9 +1,9 @@
 # Work Order: Replace the Two Divergent Docs with One Calculation Reference and a Presentation Outline
 
-**Status:** Open (engine work order completed 2026-11-14)
+**Status:** Completed
 **Handoff type:** Clean agent session (no memory of prior conversation). This document is self-contained — read fully before editing.
 **Created:** 2026-11-14
-**Completed:** Open
+**Completed:** 2026-11-14
 **Owner context:** Chad is giving these docs to his financial advisor, who is starting to use the tool with clients. The docs exist to **show the calculation basis**: what the tool computes, from which published sources, and with which simplifications. They are not marketing, not a compliance attestation, and not advice. Chad will later ask Claude (possibly Claude Design) to build a short slide presentation, so this work order produces two coordinated files: a complete text reference, and a slide-by-slide outline drawn only from the reference. The two current files in `docs/` were meant to be exactly that pair, but they drifted into two overlapping, inconsistent long documents.
 
 ---
@@ -95,7 +95,31 @@ Required sections, in this order. Numbered so the outline can point at them:
 
 ## Resolution & Commit Log (Fill when complete)
 
-- **Completed Date:**
-- **Verification Summary:** (banned-term scan result, claims table, citations confirmed/removed)
-- **Commit Hash:**
-- **Notes for Next Agent:** (anything the presentation author should know)
+- **Completed Date:** 2026-11-14
+- **Verification Summary:**
+  - Banned-term scan on both new docs: the only remaining hits are quoted UI labels ("Optimal Strategy", "Gap to Optimal", the Optimal button) and a slider range ("50%–100%"). Two prose hits were rephrased: "never start before age 60" and "lives exactly". LaTeX scan: none in the new docs (all LaTeX was in the two deleted files).
+  - `npm test`: 22/22 pass. Every worked example in the reference cites a golden-vector case id.
+  - Claims table:
+
+    | Claim in reference | Verified against |
+    |---|---|
+    | Bend points 1979–2027, latest $1,340 / $8,077; AWI 1951–2025 ($72,800.33); wage caps 1951–2027 ($192,300); refresh date | `constants.ts` header and series (regenerated 2026-11-14) |
+    | FRA and survivor FRA tables; 28.5% survivor reduction; 82.5% RIB-LIM; DRC 2/3% | `statutoryTables.ts`; POMS RS 00615.003, RS 00615.301, RS 00615.320 |
+    | Trustees: OASI 2032 / 78%, OASDI 2034 / 83%; default start 2033 | `statutoryTables.ts`; 2026 Trustees Report coverage (SSA release URL returns 403 to automated fetch; figures from search results citing it) |
+    | 2027 brackets, standard deduction $16,600 / $33,200 | IRS newsroom release for Rev. Proc. 2026-35 (fetched) |
+    | 65+ additional $2,100 / $1,700; QCD limit $114,000 | Published summaries of Rev. Proc. 2026-35 (not the Rev. Proc. text); flagged in reference section 13 |
+    | Senior deduction $6,000, 2025–2028, 6% over $75k / $150k | irs.gov OBBBA release (search result) |
+    | ULT 24.6 at 75; RMD age 73; QCDs count toward RMD | IRS Pub 590-B (fetched) |
+    | IRC 86 thresholds; tax-exempt interest in provisional income | IRS Pub 915 (fetched); `services/engine.ts` |
+    | Inputs table (ranges, defaults, presets, reset scope) | `App.tsx` lines for state defaults, sliders, setters, `handleApplyPreset`, `handleResetDefaults` |
+    | Default grid result 62/69, spread about $791k | Engine run with default inputs (WO engine_statutory_accuracy before/after table) |
+    | Heatmap: "Base" label, 5-stop red→green ramp, preset buttons | `StrategyHeatmap.tsx`, `theme.ts` |
+    | Scorecard thresholds ($1,000) and alert logic | `App.tsx` (`betterStrategyAvailable`, gap display) |
+    | Section 12: only Tailwind fetched from CDN; esm.sh import map unused in build; no storage | `dist/index.html`, built JS (no esm.sh references), grep for localStorage/sessionStorage/indexedDB/fetch (none) |
+
+  - Citations confirmed: 20 CFR 404.210–212, 404.313, 404.330, 404.335, 404.409 (FRA, which the old docs mislabeled as deemed filing), 404.410, 404.623 (deemed filing) via Cornell LII. POMS GN 00204.035 (deemed filing), RS 00605.015, RS 00615.003, RS 00615.301, RS 00615.320 via secure.ssa.gov. SSA Act §215(a)(1)(A) (dime truncation text), §215(b) (AIME heading), and §202 (82.5% limit text, delayed credit 2/3 of 1% text, and the "after application of subsection (q)" reduction reference) via ssa.gov.
+  - Citations removed or reduced to section level: "Treas. Reg. § 1.86-1" (couldn't confirm); POMS RS 00605.021, RS 00615.010, RS 00615.690, RS 00202.001, RS 00207.001 (not confirmed; replaced by confirmed CFR/POMS); "BBA 2015 § 831" became "Bipartisan Budget Act of 2015" (section number not confirmed); SSA Act §202(b)/(c)/(e)/(f)/(w) and §216(l) reduced to "§202" / CFR citations, because confirming subsection letters needed a fetch method that wasn't permitted in this session. "P.L. 119-21" became the law's name.
+- **Commit Hash:** see git log for "docs: replace divergent docs with calculation reference and presentation outline"
+- **Notes for Next Agent:**
+  - Presentation author: use `docs/PRESENTATION_OUTLINE.md`. Each slide cites reference sections. Slide 11 (limitations) must stay. Screenshots should use default inputs (slide 8 quotes the default-input result).
+  - Follow-ups: (1) confirm the QCD limit and 65+ additional deduction against the Rev. Proc. 2026-35 text; (2) optionally confirm SSA Act subsection letters by hand and restore paragraph-level Act citations; (3) the chart label "Both at FRA (67)" is FRA only for births 1960+; consider relabeling it "Both at 67" in `App.tsx`; (4) the header badge tooltip still says "Official published SSA constants", which is fine as a data-source label but could read "Published SSA data".

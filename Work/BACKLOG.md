@@ -94,7 +94,7 @@ Living list of candidate features, enhancements, and statutory maintenance items
 ---
 
 ## B-9 · Documentation Rewrite (Calculation Reference + Presentation Outline)
-**Status:** 📋 **OPEN**, unblocked (`Work/Open/WORK_ORDER_documentation_rewrite.md`)
+**Status:** ✅ **COMPLETED** (2026-11-14 `Work/Completed/WORK_ORDER_documentation_rewrite.md`)
 
 **Context:** The two docs in `docs/` diverged and contain overclaims and factual errors. Replace them with one calculation reference and one slide outline, descriptive language only.
 

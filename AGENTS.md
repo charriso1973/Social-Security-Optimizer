@@ -1,7 +1,7 @@
 # Agent Notes — Social Security Optimizer
 
 ## Project Overview
-A standalone, high-precision client-side Social Security strategy optimizer. Simulates household claiming strategies across the 62–70 age grid (81 combinations) under actuarial and statutory rules (AIME, bend points, early reductions, delayed retirement credits, spousal top-ups, and survivor step-ups).
+A standalone, client-side Social Security claiming strategy model. Simulates household claiming strategies across the 62–70 age grid (81 combinations) under actuarial and statutory rules (AIME, bend points, early reductions, delayed retirement credits, spousal top-ups, and survivor step-ups).
 
 This codebase is generic (Partner A / Partner B) and intended for financial advisor and client consultation workflows.
 
@@ -17,7 +17,8 @@ This codebase is generic (Partner A / Partner B) and intended for financial advi
   - Strategy Comparison Chart with dual views:
     - **Break-Even vs. 62**: Plots net lifetime difference against claiming at 62; crossover above $0 reveals the break-even age.
     - **Cumulative Portfolio**: Plots total portfolio growth under reinvestment.
-  - Tax Snapshot / RMD Planning Widget (Age 75 snapshot exploring standard deductions, provisional income, and taxable SS benefits).
+  - Tax Snapshot / RMD Planning Widget (snapshot in the year the older partner turns 75: RMDs, QCDs, provisional income, taxable SS, deductions, 2027 tax tables).
+- **Documentation**: `docs/CALCULATION_REFERENCE.md` (complete calculation basis) and `docs/PRESENTATION_OUTLINE.md` (slide content drawn only from the reference). Use descriptive language only (no "guarantee", "exact", "compliant", etc.); the reference's last section lists which sections to update when constants or tax tables change.
 
 ## Multi-Agent & Engineering Standards
 This project adheres to the Antigravity Multi-Agent Standard:
