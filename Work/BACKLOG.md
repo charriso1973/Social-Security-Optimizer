@@ -101,6 +101,6 @@ Living list of candidate features, enhancements, and statutory maintenance items
 ---
 
 ## B-10 · Finance Tracker Engine Parity
-**Status:** 📋 **OPEN**, unblocked (`D:\Antigravity Projects\Finance Tracker\Work\Open\WORK_ORDER_ss_engine_parity.md`)
+**Status:** ✅ **COMPLETED** (2026-11-14, Finance Tracker `3335696`: `Work\Completed\WORK_ORDER_ss_engine_parity.md`)
 
 **Context:** `Finance Tracker/backend/ss_optimizer.py` is a port of the older engine and shares its gaps; its forecaster also has a survivor-before-claim gap. Parity is enforced through the shared `tests/fixtures/ss_golden_vectors.json`.
