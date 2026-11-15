@@ -2,7 +2,7 @@
 
 *Applies to version 3.1 (3.1.0), November 2026. Drawn from `CALCULATION_REFERENCE.md` for the same version.*
 
-> **For the design agent:** this outline is the content source for a short slide presentation. Keep the language descriptive. Do not add claims, statistics or regulatory statements that aren't in the bullets or speaker notes. Every slide cites a section of `CALCULATION_REFERENCE.md`; check facts there. The limitations slide (slide 11) must be kept. Suggested visuals are optional; screenshots should use the app's default inputs unless the slide says otherwise.
+> **For the design agent:** this outline is the content source for a short slide presentation. Keep the language descriptive. Do not add claims, statistics or regulatory statements that aren't in the bullets or speaker notes. Every slide cites a section of `CALCULATION_REFERENCE.md`; check facts there. The limitations slide (slide 11) must be kept. Suggested visuals are optional; screenshots must not show the app's sample inputs or results from them (they are placeholders); use hypothetical or client figures. The deck also carries a second part, Calculation Detail, drawn from §3–14 of the reference.
 
 Audience: financial advisors and their clients reviewing how the tool calculates results.
 
@@ -43,6 +43,17 @@ Audience: financial advisors and their clients reviewing how the tool calculates
 - **Visual suggestion:** Three-tier bar showing the 90/32/15 bend-point formula.
 - **Speaker notes:** Example: an AIME of $10,000 with 2027 bend points gives a PIA of $3,650.20. For clients already past 62, the tool adds the published COLAs since their eligibility year, so the PIA is in today's dollars; a PIA from the client's SSA statement already includes them.
 - **Source:** §3
+
+## Slide 3b — The PIA formula as a curve
+
+- **Key message:** Drawn as PIA against AIME, the formula is three straight segments that flatten at each bend point.
+- **Bullets:**
+  - Slopes of 90%, 32% and 15%
+  - Bends at the eligibility-year bend points
+  - Example: AIME $10,000 → PIA $3,650.20
+- **Visual suggestion:** Line chart of monthly PIA (y) against AIME (x), with the bend points and the example marked.
+- **Speaker notes:** The same formula as slide 3. Each extra dollar of AIME adds 90 cents of monthly PIA up to the first bend point, 32 cents up to the second, and 15 cents above it. Bend points change each year with the wage index.
+- **Source:** §3.2
 
 ## Slide 4 — Claiming early or late
 
@@ -100,8 +111,8 @@ Audience: financial advisors and their clients reviewing how the tool calculates
   - ★ marks the highest-value pair for these inputs
   - "Spread" shows value above the lowest pair
   - Click any cell to update the whole page
-- **Visual suggestion:** Heatmap screenshot with default inputs.
-- **Speaker notes:** With the default inputs, the highest-value pair is 62/69 and the spread to the lowest pair is about $791,000. Different life expectancies, returns or marital status can change both the pair and the spread.
+- **Visual suggestion:** Heatmap layout with ★ and Base explained (no sample-input results).
+- **Speaker notes:** The ★ cell is the highest-value pair and the "Base" cell the lowest for the inputs entered; the spread is the gap between them. Life expectancies, returns and marital status can all change which pair is best and how large the spread is. Do not show results from the app's sample inputs; use a hypothetical or the client's own figures.
 - **Source:** §8.1
 
 ## Slide 9 — Reading the break-even chart
@@ -125,7 +136,7 @@ Audience: financial advisors and their clients reviewing how the tool calculates
   - Compares joint filing with two Single returns
   - Uses 2027 IRS tables as a stand-in
 - **Visual suggestion:** Screenshot of the tax panel showing each calculation row.
-- **Speaker notes:** RMDs and other income raise provisional income, which determines how much Social Security is taxable. QCDs reduce the taxable RMD. Future tax law is unknown, so the estimate applies current tables in today's dollars.
+- **Speaker notes:** RMDs and other income raise provisional income, which determines how much Social Security is taxable. QCDs reduce the taxable RMD. The Social Security amount taxed comes from the currently selected claim-age pair. Future tax law is unknown, so the estimate applies current tables in today's dollars.
 - **Source:** §9
 
 ## Slide 11 — Limitations
@@ -133,6 +144,7 @@ Audience: financial advisors and their clients reviewing how the tool calculates
 - **Key message:** The model simplifies some rules; results are estimates for the entered assumptions.
 - **Bullets:**
   - Annual steps, whole-year claim ages, fixed lifespans
+  - Projection stops at the older partner's age 120
   - No earnings test or divorced-spouse benefits
   - Grid ranking ignores income taxes
   - Single-year tax estimate; no state tax

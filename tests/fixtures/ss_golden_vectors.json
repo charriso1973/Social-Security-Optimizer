@@ -304,7 +304,7 @@
     {
       "id": "survivor-deceased-died-before-claiming",
       "rule": "household",
-      "source": "If the worker dies before FRA without having claimed, the widow(er) base is 100% of PIA (no DRCs, no RIB-LIM). Survivor benefit starts at the later of the year after death and the survivor's selected claim age (model simplification).",
+      "source": "If the worker dies before FRA without having claimed, the widow(er) base is 100% of PIA (no DRCs, no RIB-LIM). The survivor start age is chosen by value (0% return, B alive through 90): start 65 = 2755 x 26 = 71,630; 66 = 2877 x 25 = 71,925; 67 = 3000 x 24 = 72,000 -> wait for the unreduced benefit at survivor FRA 67.",
       "input": {
         "persons": {
           "a": {

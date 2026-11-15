@@ -60,7 +60,7 @@ AIME = floor( sum of the highest 35 indexed years / 420 )
 
 - The **indexing year** is the year the worker turns 60. If that year's AWI hasn't been published yet, the latest published AWI year is used. This follows the convention SSA uses on benefit statements, and it keeps the result at today's wage level.
 - Fewer than 35 years of earnings are filled with zeros.
-- Earnings before 1951 are not used. Years with no published wage cap use the latest cap. Both cases produce a warning under the PIA field.
+- Earnings before 1951 are not used. Years with no published wage cap use the latest cap; years more than 10 years past the latest published cap are dropped. Each case produces a warning under the PIA field.
 
 ### 3.2 From AIME to PIA
 
@@ -110,7 +110,7 @@ Months are counted between the claim age and the FRA:
 
 - **Claiming early:** 5/9 of 1% per month for the first 36 months, plus 5/12 of 1% for each additional month.
 - **Claiming late:** delayed retirement credits of 2/3 of 1% per month (8% per year), up to age 70. No credits accrue after 70.
-- Monthly benefits are rounded down to the whole dollar.
+- Monthly benefits are rounded down to the whole dollar (Social Security Act §215(g)).
 
 Claim ages in the tool are whole years (62, 63, … 70).
 
@@ -147,7 +147,7 @@ spousal excess = max(0, 50% x other partner's PIA - own PIA)
 ```
 
 - The excess is based on the other partner's **PIA**, not on their actual benefit, so delayed credits don't raise it.
-- **Deemed filing:** filing for one's own benefit is treated as filing for the spousal benefit too (rules for people born January 2, 1954 or later). The excess is payable only once **both** partners have filed. The tool starts it in the later of the partner's own claim year and the year the other partner files.
+- **Deemed filing:** filing for one's own benefit is treated as filing for the spousal benefit too (the rule for people born January 2, 1954 or later; the model applies it to every supported birth year, which matters only for hypothetical claims by people born before 1954, all of whom are now past 70). The excess is payable only once **both** partners have filed. The tool starts it in the later of the partner's own claim year and the year the other partner files.
 - **Reduction** depends on the partner's age when the spousal benefit **starts**: 25/36 of 1% per month for the first 36 months before FRA, plus 5/12 of 1% for each additional month. Starting at 62 with FRA 67 is a 35% reduction (32.5% of the other partner's PIA when one's own PIA is zero).
 
 **Worked example, case `spousal-starts-at-later-filing`**
@@ -207,7 +207,7 @@ In practice, a survivor expected to live a short time after the death starts ear
 
 ### 7.1 Timeline
 
-- The simulation runs in calendar-year steps, from the year the older partner turns 62 until both partners have died.
+- The simulation runs in calendar-year steps, from the year the older partner turns 62 until both partners have died, up to the year the older partner would turn 120. With a very large age gap (for example, more than 25 years with a 95 life expectancy for the younger partner), benefits after that year are not counted. The charts show ages up to the older partner's 97.
 - A partner is treated as alive in every year in which their age is less than or equal to the entered life expectancy. Benefits are paid for that full final year.
 - A benefit starts in the calendar year the partner reaches the claim age and is paid for the full year.
 
@@ -226,7 +226,7 @@ nominal return = (1 + real return) x (1 + inflation) - 1
 
 When **Apply Solvency Haircut?** is on, benefits from the **Reduction starts in** year onward are reduced by the **Benefit Cut** percentage (benefit x (1 − cut)). Years before the start year are unchanged.
 
-The defaults are the 2026 Trustees Report's projection for the retirement and survivors (OASI) fund: a **22% benefit cut** (78% of scheduled benefits payable) **from 2033**. The fund is projected to be depleted in 2032, and 2033 is the first full calendar year after that. The panel shows this projection under the toggle at all times. It says "Matches the 2026 Trustees Report projection" when the inputs equal it, and offers a one-click reset when they don't. For reference, it also shows the combined OASDI projection (2034, 83% payable, a 17% cut). The chart banner states the haircut in effect, or that none is applied.
+The defaults are the 2026 Trustees Report's projection for the retirement and survivors (OASI) fund: a **22% benefit cut** (78% of scheduled benefits payable) **from 2033**. The fund is projected to be depleted in 2032, and 2033 is the first full calendar year after that. The panel shows this projection under the toggle at all times. It says "Matches the 2026 Trustees Report projection" when the inputs equal it, and offers a one-click reset when they don't. When the haircut is switched on, the panel also shows, for reference, the combined OASDI projection (2034, 83% payable, a 17% cut). The chart banner states the haircut in effect, or that none is applied.
 
 Case `solvency-start-year`: a $1,000 PIA claimed at 62 pays $700/month in 2027–2033 and $560/month from 2034 when the start year is 2034 and the cut is 20% (80% payable).
 
@@ -253,7 +253,7 @@ For each pair of claim ages (Partner A 62–70 x Partner B 62–70), the tool ru
 - Clicking a cell selects that pair for the rest of the page.
 - Buttons above the grid set the pair to the highest-value pair, to 67/67 ("Both 67 (67/67)") or to 62/62 ("Early (62/62)").
 
-With the default inputs (Single; PIAs $3,451 and $3,401; life expectancies 85 and 95; both born 1973; 2.5% inflation; 5% real return; Future dollars; no solvency reduction), the grid's highest-value pair is 62/69 and its lowest is 70/62, a spread of about $791,000. Results change with every input.
+Which pair is highest, which is lowest, and the spread between them all depend on the inputs; life expectancies, the rate of return and marital status tend to move them most.
 
 ### 8.2 Break-even chart ("Break-Even vs. 62")
 
@@ -275,7 +275,7 @@ Plots cumulative value over time for the selected strategy, the highest-value st
 
 ### 8.5 Advisor presets and reset
 
-The sidebar buttons change only the inputs listed:
+The sidebar buttons change only the inputs listed. A preset's PIAs take effect only when the partner's PIA method is Manual PIA:
 
 | Preset | Married | Claim ages | PIAs | Life expectancies |
 |---|---|---|---|---|
@@ -283,7 +283,7 @@ The sidebar buttons change only the inputs listed:
 | Asymmetric | Yes | 70 / 62 | $4,000 / $1,600 | 85 / 92 |
 | Longevity | Yes | 65 / 70 | unchanged | 78 / 96 |
 
-The reset button (↻) returns the global assumptions and both partner profiles to their defaults. Tax panel inputs are not reset.
+The reset button (↻) returns the global assumptions and both partner profiles to their defaults, except the earnings-history text, which is kept. Tax panel inputs are not reset.
 
 ---
 
@@ -293,7 +293,7 @@ The tax panel estimates federal income tax for one calendar year, called the sna
 
 ### 9.1 Snapshot year
 
-The snapshot year is the year the **older** partner turns 75. Both partners are evaluated in that same year, at their respective ages.
+The snapshot year is the year the **older** partner turns 75. Both partners are evaluated in that same year, at their respective ages. The Social Security amount taxed is each partner's benefit in the snapshot year under the **currently selected** claim-age pair, so selecting a different pair in the grid changes the tax estimate.
 
 ### 9.2 Tax-deferred balance
 
@@ -315,7 +315,7 @@ FV = FV x (1 + r)^g                                                 (g = remaini
 ```
 provisional income = taxable RMD + other income + tax-exempt interest + 50% x Social Security
 
-Thresholds (not indexed for inflation):   Single $25,000 / $34,000    Joint $32,000 / $44,000
+Thresholds (IRC §86(c); not indexed for inflation):   Single $25,000 / $34,000    Joint $32,000 / $44,000
   PI <= T1:        taxable SS = 0
   T1 < PI <= T2:   taxable SS = min(50% x SS, 50% x (PI - T1))
   PI > T2:         taxable SS = min(85% x SS, 85% x (PI - T2) + min(50% x SS, 50% x (T2 - T1)))
@@ -347,7 +347,7 @@ tax            = 2027 brackets (10% to 37%) applied to taxable income
 - The panel computes tax in today's dollars using the 2027 tables. Other income, tax-exempt interest and QCD inputs are treated as today's dollars. In Future mode, the displayed amounts are then grown by the entered inflation rate to the snapshot year.
 - Tax law in the snapshot year is unknown. The current tables are a stand-in.
 - "Unmarried (Combined)" means two individuals each filing as Single. Married Filing Separately is not modeled.
-- The panel shows Gross RMD, Taxable RMD (after QCD), Total SS, Taxable SS, Other Income, Deductions, Projected AGI, estimated tax, effective rate and top marginal bracket for each filing comparison. It also notes whether filing jointly produces a higher or lower tax than two Single returns.
+- The panel shows Gross RMD, Taxable RMD (after QCD), Total SS, Taxable SS, Other Income, Deductions, Projected AGI, estimated tax, effective rate and top marginal bracket for each filing comparison. It also notes whether filing jointly produces a higher or lower tax than two Single returns, and reports no significant difference when the two are within 2%.
 
 ---
 
@@ -369,26 +369,28 @@ tax            = 2027 brackets (10% to 37%) applied to taxable income
 | Input | Range | Default | Affects |
 |---|---|---|---|
 | Name | text | Partner A / Partner B | Labels |
-| Birth Year | 1943–2010 | 1973 / 1973 | FRA, bend points, indexing year, timeline |
-| Life Expectancy | 45–105 | 85 / 95 | Last year benefits are paid; triggers survivor benefit |
+| Birth Year | 1943–2010 | sample value | FRA, bend points, indexing year, timeline |
+| Life Expectancy | 45–105 | sample values | Last year benefits are paid; triggers survivor benefit |
 | Claim Age | 62–70 | 67 / 67 | Selected strategy (the grid evaluates all ages) |
 | Marital Status (linked for both) | Single / Married | Single | Spousal and survivor rules |
 | PIA method | Manual PIA / Manual AIME / Earnings | Manual PIA | Section 3 |
-| Manual PIA | $0–$20,000 per month | $3,451 / $3,401 | PIA |
+| Manual PIA | $0–$20,000 per month | sample values | PIA |
 | Manual AIME | $0–$50,000 per month | $10,000 | PIA via eligibility-year bend points, plus COLAs since 62 for clients past 62 (section 3.3) |
 | Earnings | `year, amount` lines | 20-year samples (2005–2024) | AIME and PIA (with COLAs since 62 for clients past 62) |
 
 A note appears under Claim Age when a partner is already older than the selected age. Grid results for ages already passed are hypothetical.
 
+The app opens with sample partner and tax-panel values so every panel shows results; they are placeholders to replace with each client's figures, so they are not listed here.
+
 ### Tax panel (each partner)
 
 | Input | Default (A / B) | Affects |
 |---|---|---|
-| Qualified Savings (401k/IRA) | $1,300,000 / $1,140,000 | Projected balance and RMD |
-| Annual Contributions / Until Age | $0 until 65 / $31,000 until 65 | Projected balance |
-| Other Income (3 sources) | $36,000 + $5,000 + $0 / $100,000 + $0 + $0 | AGI and provisional income |
-| Tax-Exempt Interest | $0 / $0 | Provisional income only |
-| Charitable Giving (QCDs) | $0 / $30,000 | Taxable RMD |
+| Qualified Savings (401k/IRA) | sample values | Projected balance and RMD |
+| Annual Contributions / Until Age | sample values | Projected balance |
+| Other Income (3 sources) | sample values | AGI and provisional income |
+| Tax-Exempt Interest | sample values | Provisional income only |
+| Charitable Giving (QCDs) | sample values | Taxable RMD |
 
 ---
 
@@ -396,6 +398,7 @@ A note appears under Claim Age when a partner is already older than the selected
 
 - **Annual steps.** Benefits are modeled by calendar year, not month. Claim ages are whole years. Benefits are paid for the full year in which the claim age and the life expectancy age are reached.
 - **Fixed life expectancies.** Each partner is assumed to live to the entered age. Survival probabilities are not modeled.
+- **Projection horizon.** The projection stops in the year the older partner would turn 120, so with a very large age gap a younger partner's later benefits are not counted. Charts show ages up to the older partner's 97.
 - **Survivor timing.** The survivor start age is chosen by value for the entered life expectancy and return (section 6.4). The survivor's own claim age is still the one selected in the grid; the two are not optimized jointly after the death.
 - **Death before claiming.** Delayed credits for a partner who dies before claiming accrue through the year after their entered life expectancy, capped at age 70.
 - **Benefits not modeled:** earnings test (benefits withheld while working before FRA), marriage-duration requirements (generally 9 months for survivor benefits, 1 year for spousal benefits), divorced-spouse, child and disability benefits, and the family maximum.
@@ -418,24 +421,24 @@ A note appears under Claim Age when a partner is already older than the selected
 
 ## 13. Statutory and regulatory references
 
-Citations were checked on 2026-11-14 against SSA's Social Security Act pages, Cornell LII (CFR text), SSA POMS and irs.gov, including the text of Rev. Proc. 2026-35 and IRS Notice 2026-66.
+Citations were checked on 2026-11-14 against SSA's compilation of the Social Security Act (sections 202, 215 and 216), the CFR text, SSA POMS and irs.gov, and against published summaries of Rev. Proc. 2026-35 (released November 5, 2026) and IRS Notice 2026-66 (released November 12, 2026). Where the model's code comments cite a section, the table uses the same section.
 
 | Topic | Law | Regulation | SSA / IRS guidance |
 |---|---|---|---|
 | AIME and PIA computation, dime truncation | Social Security Act §215(a)(1)(A), §215(b) | 20 CFR 404.210–404.212 | POMS RS 00605.015 |
 | COLA increases to the PIA | Social Security Act §215(i) | — | SSA COLA series (section 2) |
-| Full retirement age | — | 20 CFR 404.409 | POMS RS 00615.003 |
-| Reduction for early entitlement | Social Security Act §202(q) | 20 CFR 404.410 | — |
-| Delayed retirement credits (2/3 of 1% per month for eligibility after 2004) | Social Security Act §202 | 20 CFR 404.313 | — |
-| Spousal benefits | Social Security Act §202 | 20 CFR 404.330 | — |
-| Deemed filing | Bipartisan Budget Act of 2015 | 20 CFR 404.623 | POMS GN 00204.035 |
-| Widow(er) benefits and age reduction | Social Security Act §202 | 20 CFR 404.335 | POMS RS 00615.301 |
-| Widow(er)'s limit (82.5% of PIA) | Social Security Act §202 | — | POMS RS 00615.320 |
-| Taxation of Social Security benefits | Internal Revenue Code §86 | — | IRS Publication 915 |
+| Full retirement age | Social Security Act §216(l) | 20 CFR 404.409 | POMS RS 00615.003 |
+| Reduction for early entitlement; monthly benefits rounded to $1 | Social Security Act §202(q), §215(g) | 20 CFR 404.410 | — |
+| Delayed retirement credits (2/3 of 1% per month for eligibility after 2004) | Social Security Act §202(w) | 20 CFR 404.313 | — |
+| Spousal benefits | Social Security Act §202(b)–(c) | 20 CFR 404.330 | — |
+| Deemed filing | Social Security Act §202(r); Bipartisan Budget Act of 2015 §831 | 20 CFR 404.623 | POMS GN 00204.035 |
+| Widow(er) benefits and age reduction (28.5% at 60) | Social Security Act §202(e)–(f), §202(q)(1), (9) | 20 CFR 404.335, 404.410 | POMS RS 00615.301 |
+| Widow(er)'s limit (82.5% of PIA) | Social Security Act §202(e)(2)(D), §202(f)(2)(D) | — | POMS RS 00615.320 |
+| Taxation of Social Security benefits | Internal Revenue Code §86 (tax-exempt interest: §86(b)(2)(B)) | — | IRS Publication 915 |
 | Required minimum distributions, Uniform Lifetime Table, QCDs | Internal Revenue Code §401(a)(9); SECURE 2.0 Act of 2022 | — | IRS Publication 590-B |
-| 2027 brackets, standard deduction, 65+ additional deduction | — | Rev. Proc. 2026-35 | IRS release (section 2) |
-| 2027 QCD limit | Internal Revenue Code §408(d)(8) | IRS Notice 2026-66 | — |
-| Senior deduction (2025–2028) | One Big Beautiful Bill Act (2025) | — | IRS release (section 2) |
+| 2027 brackets, standard deduction, 65+ additional deduction | IRC §1(j)(2), §63(c), §63(f) | Rev. Proc. 2026-35 (§3.01, §3.15) | IRS release IR-2026-133 (section 2) |
+| 2027 QCD limit | Internal Revenue Code §408(d)(8)(A) | IRS Notice 2026-66 | — |
+| Senior deduction (2025–2028) | IRC §151(d)(5)(C), added by P.L. 119-21 (One Big Beautiful Bill Act) §70103 | — | IRS release (section 2) |
 
 
 ---
